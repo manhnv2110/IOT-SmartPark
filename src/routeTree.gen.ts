@@ -22,7 +22,8 @@ import { Route as BookingNewRouteImport } from './routes/booking.new'
 import { Route as BookingIdTicketRouteImport } from './routes/booking.$id.ticket'
 import { Route as BookingIdPayRouteImport } from './routes/booking.$id.pay'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
-import { Route as ApiPublicSepayWebhookRouteImport } from './routes/api/public/sepay/webhook'
+import { Route as ApiPublicVnpayReturnRouteImport } from './routes/api/public/vnpay/return'
+import { Route as ApiPublicVnpayIpnRouteImport } from './routes/api/public/vnpay/ipn'
 
 const MapRoute = MapRouteImport.update({
   id: '/map',
@@ -89,9 +90,14 @@ const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   path: '/api/public/health',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicSepayWebhookRoute = ApiPublicSepayWebhookRouteImport.update({
-  id: '/api/public/sepay/webhook',
-  path: '/api/public/sepay/webhook',
+const ApiPublicVnpayReturnRoute = ApiPublicVnpayReturnRouteImport.update({
+  id: '/api/public/vnpay/return',
+  path: '/api/public/vnpay/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicVnpayIpnRoute = ApiPublicVnpayIpnRouteImport.update({
+  id: '/api/public/vnpay/ipn',
+  path: '/api/public/vnpay/ipn',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -109,7 +115,8 @@ export interface FileRoutesByFullPath {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/booking/$id/pay': typeof BookingIdPayRoute
   '/booking/$id/ticket': typeof BookingIdTicketRoute
-  '/api/public/sepay/webhook': typeof ApiPublicSepayWebhookRoute
+  '/api/public/vnpay/ipn': typeof ApiPublicVnpayIpnRoute
+  '/api/public/vnpay/return': typeof ApiPublicVnpayReturnRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -125,7 +132,8 @@ export interface FileRoutesByTo {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/booking/$id/pay': typeof BookingIdPayRoute
   '/booking/$id/ticket': typeof BookingIdTicketRoute
-  '/api/public/sepay/webhook': typeof ApiPublicSepayWebhookRoute
+  '/api/public/vnpay/ipn': typeof ApiPublicVnpayIpnRoute
+  '/api/public/vnpay/return': typeof ApiPublicVnpayReturnRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,7 +150,8 @@ export interface FileRoutesById {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/booking/$id/pay': typeof BookingIdPayRoute
   '/booking/$id/ticket': typeof BookingIdTicketRoute
-  '/api/public/sepay/webhook': typeof ApiPublicSepayWebhookRoute
+  '/api/public/vnpay/ipn': typeof ApiPublicVnpayIpnRoute
+  '/api/public/vnpay/return': typeof ApiPublicVnpayReturnRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,7 +169,8 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/booking/$id/pay'
     | '/booking/$id/ticket'
-    | '/api/public/sepay/webhook'
+    | '/api/public/vnpay/ipn'
+    | '/api/public/vnpay/return'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -176,7 +186,8 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/booking/$id/pay'
     | '/booking/$id/ticket'
-    | '/api/public/sepay/webhook'
+    | '/api/public/vnpay/ipn'
+    | '/api/public/vnpay/return'
   id:
     | '__root__'
     | '/'
@@ -192,7 +203,8 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/booking/$id/pay'
     | '/booking/$id/ticket'
-    | '/api/public/sepay/webhook'
+    | '/api/public/vnpay/ipn'
+    | '/api/public/vnpay/return'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -208,7 +220,8 @@ export interface RootRouteChildren {
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   BookingIdPayRoute: typeof BookingIdPayRoute
   BookingIdTicketRoute: typeof BookingIdTicketRoute
-  ApiPublicSepayWebhookRoute: typeof ApiPublicSepayWebhookRoute
+  ApiPublicVnpayIpnRoute: typeof ApiPublicVnpayIpnRoute
+  ApiPublicVnpayReturnRoute: typeof ApiPublicVnpayReturnRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -304,11 +317,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/sepay/webhook': {
-      id: '/api/public/sepay/webhook'
-      path: '/api/public/sepay/webhook'
-      fullPath: '/api/public/sepay/webhook'
-      preLoaderRoute: typeof ApiPublicSepayWebhookRouteImport
+    '/api/public/vnpay/return': {
+      id: '/api/public/vnpay/return'
+      path: '/api/public/vnpay/return'
+      fullPath: '/api/public/vnpay/return'
+      preLoaderRoute: typeof ApiPublicVnpayReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/vnpay/ipn': {
+      id: '/api/public/vnpay/ipn'
+      path: '/api/public/vnpay/ipn'
+      fullPath: '/api/public/vnpay/ipn'
+      preLoaderRoute: typeof ApiPublicVnpayIpnRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -337,7 +357,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   BookingIdPayRoute: BookingIdPayRoute,
   BookingIdTicketRoute: BookingIdTicketRoute,
-  ApiPublicSepayWebhookRoute: ApiPublicSepayWebhookRoute,
+  ApiPublicVnpayIpnRoute: ApiPublicVnpayIpnRoute,
+  ApiPublicVnpayReturnRoute: ApiPublicVnpayReturnRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

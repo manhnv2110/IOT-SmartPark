@@ -12,7 +12,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { getBooking } from "@/lib/booking.functions";
-import { isValidBookingId } from "@/lib/sepay";
+import { isValidBookingId } from "@/lib/booking-id";
 import { AppCard } from "@/components/ui/app-card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";

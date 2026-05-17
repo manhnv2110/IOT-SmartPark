@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { bookingPaymentRef } from "@/lib/sepay";
 
 const HOLD_MINUTES = 10;
 
@@ -87,7 +86,6 @@ export const createBooking = createServerFn({ method: "POST" })
     return {
       bookingId: booking.id as string,
       amount: booking.amount as number,
-      paymentRef: bookingPaymentRef(booking.id),
       holdExpiresAt: booking.hold_expires_at as string,
     };
   });

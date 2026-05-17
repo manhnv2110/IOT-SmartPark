@@ -140,6 +140,7 @@ export type Database = {
           booking_id: string
           id: string
           provider: string
+          provider_tx_id: string | null
           raw_payload: Json | null
           received_at: string
           sepay_tx_id: string | null
@@ -149,6 +150,7 @@ export type Database = {
           booking_id: string
           id?: string
           provider?: string
+          provider_tx_id?: string | null
           raw_payload?: Json | null
           received_at?: string
           sepay_tx_id?: string | null
@@ -158,6 +160,7 @@ export type Database = {
           booking_id?: string
           id?: string
           provider?: string
+          provider_tx_id?: string | null
           raw_payload?: Json | null
           received_at?: string
           sepay_tx_id?: string | null

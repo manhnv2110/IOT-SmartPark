@@ -57,9 +57,9 @@ export function SlotGrid2D({ layout, selectedSlotId, onSelectSlot, pathCells }: 
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={() =>
-                  !sp.slot.is_occupied && onSelectSlot?.(sp.slot.id)
+                  !(sp.slot.is_occupied ?? false) && onSelectSlot?.(sp.slot.id)
                 }
-                disabled={sp.slot.is_occupied}
+                disabled={sp.slot.is_occupied ?? false}
                 title={`${sp.slot.slot_number} • ${sp.slot.is_occupied ? "Đang dùng" : "Trống"}`}
                 style={{
                   gridRowStart: sp.row + 1,

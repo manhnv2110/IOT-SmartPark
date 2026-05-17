@@ -21,14 +21,15 @@ export function ActivityFeed({ device }: { device: Device }) {
     const next = new Map<string, boolean>();
     const fresh: Event[] = [];
     for (const s of device.sensor_data) {
-      next.set(s.id, s.is_occupied);
+      const occupied = s.is_occupied ?? false;
+      next.set(s.id, occupied);
       const before = prev.current.get(s.id);
-      if (before !== undefined && before !== s.is_occupied) {
+      if (before !== undefined && before !== occupied) {
         fresh.push({
           id: `${s.id}-${Date.now()}`,
           slot: s.slot_number,
           floor: s.floor,
-          occupied: s.is_occupied,
+          occupied,
           at: Date.now(),
         });
       }

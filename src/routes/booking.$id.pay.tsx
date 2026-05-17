@@ -1,41 +1,42 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
+import { z } from "zod";
 import { toast } from "sonner";
 import {
-  Building2,
-  CreditCard,
-  User,
-  Wallet,
-  FileText,
   Loader2,
   CheckCircle2,
-  RefreshCcw,
+  ExternalLink,
+  CreditCard,
+  XCircle,
 } from "lucide-react";
 import { getBooking, cancelBooking } from "@/lib/booking.functions";
-import {
-  SEPAY_CONFIG,
-  bookingPaymentRef,
-  sepayQrUrl,
-  isValidBookingId,
-} from "@/lib/sepay";
+import { createVnpayPaymentUrl } from "@/lib/vnpay.functions";
+import { isValidBookingId } from "@/lib/booking-id";
 import { AppCard } from "@/components/ui/app-card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { BookingErrorState } from "@/components/booking/BookingErrorState";
 import { BookingStepper } from "@/components/booking/BookingStepper";
 import { PaymentCountdown } from "@/components/booking/PaymentCountdown";
-import { CopyRow } from "@/components/booking/CopyRow";
+
+const PaySearchSchema = z.object({
+  vnp_status: z.enum(["success", "failed"]).optional(),
+  vnp_code: z.string().optional(),
+});
 
 export const Route = createFileRoute("/booking/$id/pay")({
+  validateSearch: (s) => PaySearchSchema.parse(s),
   component: PayPage,
 });
 
 function PayPage() {
   const { id } = Route.useParams();
+  const search = useSearch({ from: "/booking/$id/pay" });
   const { user, loading } = useAuth();
   const nav = useNavigate();
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -43,15 +44,35 @@ function PayPage() {
     }
   }, [loading, user, id, nav]);
 
+  // Hiển thị toast khi user vừa quay từ VNPay về.
+  useEffect(() => {
+    if (search.vnp_status === "success") {
+      toast.success("Thanh toán đang được xác nhận...");
+    } else if (search.vnp_status === "failed") {
+      toast.error(
+        search.vnp_code === "24"
+          ? "Bạn đã huỷ giao dịch trên cổng VNPay"
+          : "Thanh toán không thành công",
+      );
+    }
+  }, [search.vnp_status, search.vnp_code]);
+
   const validId = isValidBookingId(id);
 
   const fetchBooking = useServerFn(getBooking);
   const doCancel = useServerFn(cancelBooking);
+  const doCreateUrl = useServerFn(createVnpayPaymentUrl);
 
   const q = useQuery({
     queryKey: ["booking", id],
+    // Poll mạnh hơn khi vừa redirect về (để bắt IPN sớm).
+    refetchInterval: (q) =>
+      q.state.data?.status === "pending"
+        ? search.vnp_status === "success"
+          ? 1500
+          : 3000
+        : false,
     queryFn: () => fetchBooking({ data: { id } }),
-    refetchInterval: (q) => (q.state.data?.status === "pending" ? 3000 : false),
     refetchOnWindowFocus: true,
     enabled: !!user && validId,
     retry: 1,
@@ -62,18 +83,10 @@ function PayPage() {
     if (q.data?.status === "paid" || q.data?.status === "active") {
       const t = setTimeout(() => {
         nav({ to: "/booking/$id/ticket", params: { id } });
-      }, 1800);
+      }, 1500);
       return () => clearTimeout(t);
     }
   }, [q.data?.status, id, nav]);
-
-  const ref = useMemo(() => {
-    try {
-      return validId ? bookingPaymentRef(id) : null;
-    } catch {
-      return null;
-    }
-  }, [id, validId]);
 
   if (!validId) {
     return (
@@ -145,13 +158,12 @@ function PayPage() {
       <BookingErrorState
         title="Đơn đã hết hạn"
         description="Vui lòng đặt lại nếu vẫn còn nhu cầu."
-        
       />
     );
   }
 
   const amount = Number(b.amount ?? 0);
-  if (!ref || amount <= 0) {
+  if (amount <= 0) {
     return (
       <BookingErrorState
         title="Đơn không có thông tin thanh toán hợp lệ"
@@ -160,12 +172,19 @@ function PayPage() {
     );
   }
 
-  let qrSrc: string | null = null;
-  try {
-    qrSrc = sepayQrUrl({ amount, bookingId: id });
-  } catch {
-    qrSrc = null;
+  async function handlePay(bankCode?: string) {
+    setRedirecting(true);
+    try {
+      const res = await doCreateUrl({ data: { bookingId: id, bankCode } });
+      if (!res?.paymentUrl) throw new Error("Không tạo được liên kết thanh toán");
+      window.location.href = res.paymentUrl;
+    } catch (err) {
+      setRedirecting(false);
+      toast.error((err as Error).message ?? "Lỗi tạo liên kết VNPay");
+    }
   }
+
+  const justFailed = search.vnp_status === "failed";
 
   return (
     <main className="mx-auto max-w-md px-4 py-6 space-y-4">
@@ -173,116 +192,107 @@ function PayPage() {
 
       <PaymentCountdown expiresAt={b.hold_expires_at} />
 
-      <AppCard className="p-6 flex flex-col items-center gap-4 shadow-ticket">
-        <div className="text-center">
-          <h1 className="text-title text-foreground">Quét QR để thanh toán</h1>
-          <div className="inline-flex items-center gap-2 mt-2 text-xs text-[var(--available)]">
-            <span className="relative inline-block w-1.5 h-1.5 rounded-full bg-[var(--available)] animate-pulse-dot" />
-            <span className="text-muted-foreground">Đang chờ thanh toán</span>
+      {justFailed && (
+        <div
+          role="alert"
+          className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 flex items-start gap-3"
+        >
+          <XCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-medium text-foreground">
+              Giao dịch trước chưa hoàn tất
+            </p>
+            <p className="text-muted-foreground mt-1">
+              {search.vnp_code === "24"
+                ? "Bạn đã huỷ trên cổng VNPay. Bấm nút bên dưới để thử lại."
+                : "Thanh toán bị lỗi. Vui lòng thử lại với phương thức khác."}
+            </p>
           </div>
         </div>
+      )}
 
-        <div className="relative bg-white rounded-2xl p-4 ring-1 ring-border">
-          {qrSrc ? (
-            <img
-              src={qrSrc}
-              alt={`QR thanh toán ${amount.toLocaleString("vi")}đ`}
-              className="w-64 h-64 object-contain"
-              loading="eager"
-            />
-          ) : (
-            <div className="w-64 h-64 grid place-items-center text-muted-foreground text-sm">
-              Không tạo được QR
-            </div>
-          )}
+      <AppCard className="p-6 flex flex-col items-center gap-4 shadow-ticket text-center">
+        <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/15 grid place-items-center">
+          <CreditCard className="w-8 h-8 text-primary" />
         </div>
-        <p className="text-caption -mt-1">
-          VietQR · {SEPAY_CONFIG.bank}
-        </p>
+        <div>
+          <h1 className="text-title text-foreground">Thanh toán qua VNPay</h1>
+          <p className="text-caption text-muted-foreground mt-1">
+            Cổng thanh toán an toàn — hỗ trợ ATM, QR, thẻ quốc tế.
+          </p>
+        </div>
 
-        <div className="text-center">
-          <p className="text-caption">Số tiền cần chuyển</p>
+        <div className="w-full border-t border-border pt-4">
+          <p className="text-caption">Số tiền cần thanh toán</p>
           <p className="text-3xl font-semibold tabular-nums text-primary mt-1 tracking-tight">
             {amount.toLocaleString("vi")}
             <span className="text-base ml-1 text-muted-foreground font-normal">đ</span>
           </p>
+          <p className="text-caption text-muted-foreground mt-2">
+            Mã đơn: <span className="font-mono">{b.id.slice(0, 8).toUpperCase()}</span>
+          </p>
         </div>
-      </AppCard>
 
-      <AppCard className="p-3 space-y-1">
-        <CopyRow
-          label="Ngân hàng"
-          value={SEPAY_CONFIG.bank}
-          icon={<Building2 className="w-4 h-4" />}
-          mono={false}
-        />
-        <CopyRow
-          label="Số tài khoản"
-          value={SEPAY_CONFIG.accountNumber}
-          icon={<CreditCard className="w-4 h-4" />}
-        />
-        <CopyRow
-          label="Chủ tài khoản"
-          value={SEPAY_CONFIG.accountHolder}
-          icon={<User className="w-4 h-4" />}
-          mono={false}
-        />
-        <CopyRow
-          label="Số tiền"
-          value={`${amount.toLocaleString("vi")} đ`}
-          copyValue={String(amount)}
-          icon={<Wallet className="w-4 h-4" />}
-        />
-        <CopyRow
-          label="Nội dung chuyển khoản"
-          value={ref}
-          highlight
-          icon={<FileText className="w-4 h-4" />}
-        />
+        <Button
+          onClick={() => handlePay()}
+          disabled={redirecting}
+          size="lg"
+          className="w-full"
+        >
+          {redirecting ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Đang chuyển sang VNPay...
+            </>
+          ) : (
+            <>
+              <ExternalLink className="w-4 h-4 mr-2" />
+              {justFailed ? "Thử lại với VNPay" : "Thanh toán ngay"}
+            </>
+          )}
+        </Button>
+
+        <p className="text-[11px] text-muted-foreground">
+          Bạn sẽ được chuyển sang sandbox.vnpayment.vn để hoàn tất giao dịch.
+        </p>
       </AppCard>
 
       <details className="rounded-xl border border-border bg-card/50 p-3 text-sm">
         <summary className="cursor-pointer font-medium select-none">
-          📱 Hướng dẫn chuyển khoản
+          💳 Hướng dẫn thanh toán sandbox
         </summary>
         <ol className="mt-3 space-y-2 text-muted-foreground list-decimal list-inside">
-          <li>Mở app ngân hàng → chọn <strong>Quét QR / VietQR</strong>.</li>
+          <li>Bấm <strong>Thanh toán ngay</strong> để chuyển sang VNPay sandbox.</li>
+          <li>Chọn ngân hàng <strong>NCB</strong> (test mặc định).</li>
           <li>
-            Kiểm tra <strong>số tiền</strong> và{" "}
-            <strong>nội dung chuyển khoản</strong> đúng như trên.
+            Nhập:
+            <ul className="mt-1 ml-4 list-disc text-xs">
+              <li>Số thẻ: <code className="font-mono">9704198526191432198</code></li>
+              <li>Tên chủ thẻ: <code className="font-mono">NGUYEN VAN A</code></li>
+              <li>Ngày phát hành: <code className="font-mono">07/15</code></li>
+              <li>OTP: <code className="font-mono">123456</code></li>
+            </ul>
           </li>
-          <li>Xác nhận. Hệ thống tự cập nhật trong vòng 10 giây.</li>
+          <li>Sau khi xác nhận, hệ thống tự cập nhật trong 1–2 giây.</li>
         </ol>
       </details>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          variant="outline"
-          onClick={() => {
+      <Button
+        variant="ghost"
+        className="w-full text-muted-foreground"
+        onClick={async () => {
+          if (!confirm("Huỷ đơn này? Chỗ giữ sẽ bị giải phóng.")) return;
+          try {
+            await doCancel({ data: { id } });
+            toast.success("Đã huỷ đơn");
             q.refetch();
-            toast.message("Đang kiểm tra trạng thái...");
-          }}
-        >
-          <RefreshCcw className="w-4 h-4 mr-2" />
-          Kiểm tra ngay
-        </Button>
-        <Button
-          variant="ghost"
-          className="text-muted-foreground"
-          onClick={async () => {
-            if (!confirm("Huỷ đơn này? Chỗ giữ sẽ bị giải phóng.")) return;
-            try {
-              await doCancel({ data: { id } });
-              toast.success("Đã huỷ đơn");
-              q.refetch();
-            } catch (e) {
-              toast.error((e as Error).message);
-            }
-          }}
-        >
-          Huỷ đơn
-        </Button>
-      </div>
+          } catch (e) {
+            toast.error((e as Error).message);
+          }
+        }}
+      >
+        Huỷ đơn
+      </Button>
     </main>
   );
 }

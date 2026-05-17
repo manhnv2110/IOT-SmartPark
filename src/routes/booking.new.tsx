@@ -92,6 +92,7 @@ function BookingNew() {
       }),
     onSuccess: (res) => {
       if (!res || typeof res.bookingId !== "string" || res.bookingId.length < 36) {
+        console.error("[Booking] Unexpected response:", res);
         toast.error("Không tạo được đơn — vui lòng thử lại");
         return;
       }
@@ -99,6 +100,7 @@ function BookingNew() {
       nav({ to: "/booking/$id/pay", params: { id: res.bookingId } });
     },
     onError: (err: Error) => {
+      console.error("[Booking] Error:", err);
       toast.error(err.message || "Không tạo được đơn");
     },
   });

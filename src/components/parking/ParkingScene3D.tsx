@@ -181,10 +181,10 @@ function Scene({ layout, selectedSlotId, onSelectSlot, pathCells }: Props) {
             key={sp.slot.id}
             x={x}
             z={z}
-            occupied={sp.slot.is_occupied}
+            occupied={sp.slot.is_occupied ?? false}
             selected={selectedSlotId === sp.slot.id}
             onPath={pathSet.has(`${sp.row},${sp.col}`)}
-            onClick={() => !sp.slot.is_occupied && onSelectSlot?.(sp.slot.id)}
+            onClick={() => !(sp.slot.is_occupied ?? false) && onSelectSlot?.(sp.slot.id)}
             label={sp.slot.slot_number}
           />
         );

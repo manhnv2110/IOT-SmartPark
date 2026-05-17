@@ -12,6 +12,11 @@ export interface LotCoord {
 export const LOT_COORDINATES: Record<string, LotCoord> = {
   "bãi giữ xe số 1": { lat: 21.036, lng: 105.7615 },
   "bãi đỗ xe số 1": { lat: 21.036, lng: 105.7615 },
+  // Mock devices (xem mock-devices.ts) — coordinates này dùng cho map view khi IoT tắt.
+  "bãi đỗ hoàn kiếm": { lat: 21.0285, lng: 105.8542 },
+  "bãi đỗ cầu giấy": { lat: 21.0322, lng: 105.7826 },
+  "bãi đỗ tây hồ": { lat: 21.0664, lng: 105.8262 },
+  "bãi đỗ hai bà trưng": { lat: 21.0167, lng: 105.8504 },
 };
 
 export function lookupCoord(name: string): LotCoord | null {

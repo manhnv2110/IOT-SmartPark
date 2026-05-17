@@ -1,33 +1,29 @@
+/**
+ * Parking types — re-exports from the IoT API module plus domain helpers.
+ *
+ * Existing imports like `import { Device } from "@/lib/parking.types"`
+ * continue to work unchanged.
+ */
+
 import { z } from "zod";
+import {
+  SensorDataOutSchema,
+  DeviceWithDataOutSchema,
+  DevicesWithDataResponseSchema as _DevicesWithDataResponseSchema,
+} from "@/lib/iot-api";
 
-export const SensorDataSchema = z.object({
-  id: z.string(),
-  device_id: z.string(),
-  floor: z.string(),
-  slot_number: z.string(),
-  is_occupied: z.boolean(),
-  type: z.string(),
-  timestamp: z.string(),
-});
+// Re-export schemas under their original names for backward compat
+export const SensorDataSchema = SensorDataOutSchema;
+export const DeviceSchema = DeviceWithDataOutSchema;
+export const DevicesResponseSchema = _DevicesWithDataResponseSchema;
 
-export const DeviceSchema = z.object({
-  name: z.string(),
-  description: z.string().nullable().optional().default(""),
-  is_online: z.boolean(),
-  last_seen: z.string().nullable().optional(),
-  meta: z.record(z.string(), z.any()).nullable().optional().default({}),
-  updated_at: z.string().nullable().optional(),
-  sensor_data: z.array(SensorDataSchema).default([]),
-});
-
-export const DevicesResponseSchema = z.array(DeviceSchema);
-
+// Type aliases matching original names
 export type SensorData = z.infer<typeof SensorDataSchema>;
 export type Device = z.infer<typeof DeviceSchema>;
 
 /**
- * Stable id derived from sensor device_id (since the API does not return a
- * top-level device id on the device object). Falls back to slugified name.
+ * Stable id derived from sensor device_id (since the with-data endpoint
+ * does not return a top-level device id). Falls back to slugified name.
  */
 export function getDeviceId(device: Device): string {
   if (device.sensor_data && device.sensor_data.length > 0) {

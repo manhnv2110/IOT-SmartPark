@@ -66,17 +66,33 @@ function LotsPage() {
         errorTitle="Không tải được danh sách bãi đỗ"
       >
         {(data) => (
-          <FilteredGrid
-            devices={data.devices ?? []}
-            apiError={data.error ?? null}
-            q={q}
-            filter={filter}
-            sort={sort}
-            onClear={() => {
-              setQ("");
-              setFilter("all");
-            }}
-          />
+          <>
+            {data.mock && (
+              <div
+                role="status"
+                className="rounded-xl bg-[var(--reserved)]/10 border border-[var(--reserved)]/30 p-3 text-xs flex items-center gap-2 mb-4"
+              >
+                <span className="inline-block size-2 rounded-full bg-[var(--reserved)] animate-pulse-dot" />
+                <span className="font-medium text-foreground">
+                  Đang dùng dữ liệu giả lập
+                </span>
+                <span className="text-muted-foreground">
+                  — {data.error ?? "IOT_USE_MOCK đã bật."} Đặt chỗ và thanh toán vẫn hoạt động.
+                </span>
+              </div>
+            )}
+            <FilteredGrid
+              devices={data.devices ?? []}
+              apiError={data.mock ? null : data.error ?? null}
+              q={q}
+              filter={filter}
+              sort={sort}
+              onClear={() => {
+                setQ("");
+                setFilter("all");
+              }}
+            />
+          </>
         )}
       </AsyncSurface>
     </div>
