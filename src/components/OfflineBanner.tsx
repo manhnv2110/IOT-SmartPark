@@ -38,7 +38,7 @@ export function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed top-0 inset-x-0 z-[60] bg-destructive text-destructive-foreground"
+      className="sticky top-0 inset-x-0 z-[60] bg-destructive/95 backdrop-blur text-destructive-foreground"
     >
       <div className="mx-auto max-w-7xl px-4 py-2 flex items-center gap-2 text-sm font-medium">
         <WifiOff className="size-4" aria-hidden="true" />

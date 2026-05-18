@@ -140,6 +140,8 @@ function KpiStrip() {
           topN: 10,
         },
       }),
+    retry: 1,
+    staleTime: 30_000,
   });
 
   const stats = useMemo(() => {
@@ -245,6 +247,8 @@ function RecommenderPanel() {
           topN: 5,
         },
       }),
+    retry: 1,
+    staleTime: 30_000,
   });
 
   return (
@@ -304,7 +308,18 @@ function RecommenderPanel() {
 
       <div className="p-5 space-y-3">
         {q.isLoading && <RecSkeletons />}
-        {!q.isLoading && q.data?.recommendations.length === 0 && (
+        {q.isError && (
+          <div className="text-center py-8 space-y-3">
+            <p className="text-sm text-muted-foreground">Không tải được gợi ý.</p>
+            <button
+              onClick={() => q.refetch()}
+              className="text-sm text-primary hover:underline font-medium"
+            >
+              Thử lại
+            </button>
+          </div>
+        )}
+        {!q.isLoading && !q.isError && q.data?.recommendations.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-8">Chưa có bãi nào phù hợp.</p>
         )}
         {q.data?.recommendations.map((r, idx) => (

@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { MapPin, Wifi, WifiOff, Star, Navigation, ArrowRight } from "lucide-react";
 import { computeStats, getDeviceId, type Device } from "@/lib/parking.types";
 import { OccupancyBar } from "./OccupancyBar";
@@ -12,12 +12,13 @@ export function LotCard({ device }: { device: Device }) {
   const stats = computeStats(device);
   const { isFav, toggle } = useFavorites();
   const fav = isFav(id);
+  const nav = useNavigate();
 
   return (
-    <Link
-      to="/lots/$deviceId"
-      params={{ deviceId: id }}
-      className="group block rounded-2xl bg-card border border-border p-5 shadow-[var(--shadow-1)] hover:shadow-[var(--shadow-2)] hover:-translate-y-0.5 transition-all duration-200"
+    <div
+      role="article"
+      onClick={() => nav({ to: "/lots/$deviceId", params: { deviceId: id } })}
+      className="group block rounded-2xl bg-card border border-border p-5 shadow-[var(--shadow-1)] hover:shadow-[var(--shadow-2)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -31,7 +32,7 @@ export function LotCard({ device }: { device: Device }) {
         </div>
         <button
           onClick={(e) => {
-            e.preventDefault();
+            e.stopPropagation();
             toggle(id);
           }}
           className="p-1.5 rounded-lg hover:bg-accent/60 text-muted-foreground hover:text-[var(--reserved)] transition-colors"
@@ -39,8 +40,8 @@ export function LotCard({ device }: { device: Device }) {
         >
           <Star
             className={cn(
-              "size-4",
-              fav && "fill-[var(--reserved)] text-[var(--reserved)]",
+              "size-4 transition-all",
+              fav && "fill-[var(--reserved)] text-[var(--reserved)] scale-110",
             )}
             strokeWidth={1.75}
           />
@@ -63,7 +64,10 @@ export function LotCard({ device }: { device: Device }) {
         </div>
         {device.is_online ? (
           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--available)]/12 text-[var(--available)] text-[11px] font-medium">
-            <Wifi className="size-3" strokeWidth={2.25} />
+            <span className="relative flex size-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--available)] opacity-50" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-[var(--available)]" />
+            </span>
             Online
           </span>
         ) : (
@@ -92,7 +96,7 @@ export function LotCard({ device }: { device: Device }) {
         <div className="flex items-center gap-1.5">
           <Link
             to="/map"
-            search={{ route: id } as never}
+            search={{ route: id } as Record<string, string>}
             onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border text-foreground/80 hover:bg-accent/60 text-xs font-medium transition-colors"
           >
@@ -101,7 +105,7 @@ export function LotCard({ device }: { device: Device }) {
           </Link>
           <Link
             to="/booking/new"
-            search={{ lot: id, name: device.name } as never}
+            search={{ lot: id, name: device.name } as Record<string, string>}
             onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 text-xs font-semibold transition-opacity shadow-[var(--shadow-xs)]"
           >
@@ -110,6 +114,6 @@ export function LotCard({ device }: { device: Device }) {
           </Link>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

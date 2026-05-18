@@ -86,7 +86,7 @@ function MapPage() {
   const showRoutePanel = !!routing.route;
 
   return (
-    <div className="grid lg:grid-cols-[360px_1fr] gap-4 h-[calc(100vh-160px)]">
+    <div className="grid lg:grid-cols-[360px_1fr] gap-4 min-h-[500px] h-[calc(100dvh-140px)]">
       {/* SIDEBAR (desktop only) */}
       <aside className="hidden lg:flex rounded-2xl glass overflow-hidden flex-col">
         {showRoutePanel ? (
