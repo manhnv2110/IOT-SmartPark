@@ -6,9 +6,21 @@
 		"nodejs_compat"
 	],
 	"main": "src/server.ts",
+	"keep_vars": true,
 	"vars": {
-		"IOT_USE_MOCK": "1",
+		"IOT_ADMIN_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjYzY0NWIzMi1mZDEwLTRmNzQtOWJiZC1mMmM4N2U1M2VmMmYiLCJleHAiOjE3Nzk3Nzg1MDB9.3PlWuO_xeeW3xUuyzYsEZLjgJ7rUENFRtCVuSlm3qJE",
+		"IOT_API_KEY": "abc",
+		"IOT_API_URL": "https://iotprjt4-production.up.railway.app/",
+		"IOT_USE_MOCK": "0",
+		"SUPABASE_PUBLISHABLE_KEY": "sb_publishable_vJCrDLMjHl9nJGx5X2YwsQ_E1FW-BIk",
+		"SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpoZWNza3dleXNoYWN2cWtrZ3ZzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODk5Nzk4MCwiZXhwIjoyMDk0NTczOTgwfQ.ennLptHP_BKKhqf4yFK9McMp6vnjPmvXDSoLjD-NBug",
+		"SUPABASE_URL": "https://jhecskweyshacvqkkgvs.supabase.co",
+		"VITE_SUPABASE_PROJECT_ID": "jhecskweyshacvqkkgvs",
+		"VITE_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_vJCrDLMjHl9nJGx5X2YwsQ_E1FW-BIk",
+		"VITE_SUPABASE_URL": "https://jhecskweyshacvqkkgvs.supabase.co",
+		"VNPAY_HASH_SECRET": "J3NXN0AEFWSI0ZXK3TEN1FYYQBMQZSGE",
 		"VNPAY_PAYMENT_URL": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
-		"VNPAY_RETURN_URL": "http://localhost:5173/api/public/vnpay/return"
-	},
+		"VNPAY_RETURN_URL": "https://tanstack-start-app.uet-smartpark.workers.dev/api/public/vnpay/return",
+		"VNPAY_TMN_CODE": "PZKWOPO3"
+	}
 }

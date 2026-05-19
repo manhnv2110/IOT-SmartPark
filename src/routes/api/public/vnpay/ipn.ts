@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyVnpaySignature, VNPAY_RESPONSE_CODE } from "@/lib/vnpay";
+import { iotClient } from "@/lib/iot-api";
 
 /**
  * VNPay IPN (Instant Payment Notification).
@@ -27,6 +28,13 @@ async function handle(query: Record<string, string>) {
   // 1. Verify HMAC.
   const { valid, data } = await verifyVnpaySignature(query);
   if (!valid) {
+    // Debug: log để kiểm tra signature mismatch
+    console.error("[vnpay-ipn] Signature verification failed", {
+      hasHashSecret: !!process.env.VNPAY_HASH_SECRET,
+      hashSecretLength: (process.env.VNPAY_HASH_SECRET ?? "").length,
+      presentedHash: (query["vnp_SecureHash"] ?? "").slice(0, 20) + "...",
+      queryKeys: Object.keys(query).sort().join(","),
+    });
     return { RspCode: "97", Message: "Invalid signature" };
   }
 
@@ -128,6 +136,36 @@ async function handle(query: Record<string, string>) {
   // 9. Cleanup hold.
   await supabaseAdmin.from("slot_holds").delete().eq("booking_id", booking.id);
 
+  // 10. Send unlock command to IoT device (best-effort).
+  // After payment, unlock the slot so the user can access it.
+  if (updated) {
+    try {
+      const { data: fullBooking } = await supabaseAdmin
+        .from("bookings")
+        .select("lot_device_id, slot_index")
+        .eq("id", booking.id)
+        .single();
+
+      if (fullBooking?.lot_device_id && fullBooking.slot_index != null) {
+        // Fetch device sensor data to resolve slot_index → slot_number
+        const iotToken = process.env.IOT_ADMIN_TOKEN;
+        if (iotToken) {
+          const sensorData = await iotClient.getLatestValues(iotToken, fullBooking.lot_device_id);
+          const slot = sensorData[fullBooking.slot_index];
+          const slotNumber = slot?.slot_number ?? `A${fullBooking.slot_index + 1}`;
+
+          await iotClient.sendLockCommand(fullBooking.lot_device_id, {
+            slot_number: slotNumber,
+            locked: false, // Unlock after payment
+          });
+        }
+      }
+    } catch (lockErr) {
+      // Non-blocking: log but don't fail the IPN response
+      console.error("[vnpay-ipn] Failed to send unlock command:", lockErr);
+    }
+  }
+
   return {
     RspCode: "00",
     Message: updated ? "Confirm Success" : "Order already confirmed",
@@ -139,8 +177,8 @@ export const Route = createFileRoute("/api/public/vnpay/ipn")({
     handlers: {
       GET: async ({ request }) => {
         const url = new URL(request.url);
-        const query: Record<string, string> = {};
-        for (const [k, v] of url.searchParams.entries()) query[k] = v;
+        // Use raw query string to preserve VNPay's original encoding for signature verification
+        const query = parseRawQuery(url.search);
 
         try {
           const body = await handle(query);
@@ -153,9 +191,7 @@ export const Route = createFileRoute("/api/public/vnpay/ipn")({
       // Một số setup VNPay POST URL-encoded body — support luôn.
       POST: async ({ request }) => {
         const text = await request.text();
-        const params = new URLSearchParams(text);
-        const query: Record<string, string> = {};
-        for (const [k, v] of params.entries()) query[k] = v;
+        const query = parseRawQuery("?" + text);
         try {
           const body = await handle(query);
           return Response.json(body);
@@ -167,3 +203,16 @@ export const Route = createFileRoute("/api/public/vnpay/ipn")({
     },
   },
 });
+
+/**
+ * Parse query string preserving decoded values (URLSearchParams behavior).
+ * This ensures values match what VNPay expects for HMAC verification.
+ */
+function parseRawQuery(search: string): Record<string, string> {
+  const query: Record<string, string> = {};
+  const params = new URLSearchParams(search);
+  for (const [k, v] of params.entries()) {
+    query[k] = v;
+  }
+  return query;
+}

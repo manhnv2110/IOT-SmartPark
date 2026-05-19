@@ -10,6 +10,7 @@ import {
   ListChecks,
   Share2,
   CheckCircle2,
+  Ticket,
 } from "lucide-react";
 import { getBooking } from "@/lib/booking.functions";
 import { isValidBookingId } from "@/lib/booking-id";
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { BookingErrorState } from "@/components/booking/BookingErrorState";
 import { BookingStepper } from "@/components/booking/BookingStepper";
+import { SlotLockControl } from "@/components/booking/SlotLockControl";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$id/ticket")({
@@ -36,7 +38,7 @@ function TicketPage() {
   const validId = isValidBookingId(id);
 
   const fetchBooking = useServerFn(getBooking);
-  const { data: b, isLoading, refetch } = useQuery({
+  const { data: b, isLoading } = useQuery({
     queryKey: ["booking", id],
     queryFn: () => fetchBooking({ data: { id } }),
     enabled: !!user && validId,
@@ -96,16 +98,16 @@ function TicketPage() {
 
   const code = b.ticket_code ?? "------";
   const amount = Number(b.amount ?? 0);
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=4&data=${encodeURIComponent(
-    `SMARTPARK|${b.id}|${code}`,
-  )}`;
 
   const statusInfo =
     b.status === "active" || b.checkin_at
-      ? { label: "ĐANG GỬI XE", color: "bg-reserved/15 text-reserved border-reserved/40" }
+      ? { label: "ĐANG GỬI XE" }
       : b.status === "completed"
-        ? { label: "ĐÃ HOÀN THÀNH", color: "bg-muted text-muted-foreground border-border" }
-        : { label: "ĐÃ THANH TOÁN", color: "bg-available/15 text-available border-available/40" };
+        ? { label: "ĐÃ HOÀN THÀNH" }
+        : { label: "ĐÃ THANH TOÁN" };
+
+  const canControlLock =
+    (b.status === "paid" || b.status === "active") && !!b.lot_device_id;
 
   const handleShare = async () => {
     const shareText = `Vé gửi xe SmartPark\nMã: ${code}\nBãi: ${b.lot_name ?? b.lot_device_id}\nBiển số: ${b.plate}`;
@@ -125,9 +127,8 @@ function TicketPage() {
     <main className="mx-auto max-w-md px-4 py-6 space-y-5">
       <BookingStepper status={b.status} />
 
-      {/* Boarding-pass ticket */}
+      {/* Ticket header card — replaces the QR boarding-pass */}
       <div className="relative rounded-3xl bg-card shadow-ticket overflow-hidden">
-        {/* Header strip */}
         <div className="gradient-pay px-6 py-5 text-primary-foreground">
           <div className="flex items-center justify-between">
             <div>
@@ -155,40 +156,24 @@ function TicketPage() {
           </div>
         </div>
 
-        {/* Perforation */}
-        <div className="relative">
-          <div className="ticket-notch-l" />
-          <div className="ticket-notch-r" />
-          <div className="ticket-perforation mx-6" />
-        </div>
-
-        {/* QR + code */}
-        <div className="px-6 pt-5 pb-6 text-center">
-          <div className="inline-block bg-white rounded-2xl p-3 ring-1 ring-border">
-            <img src={qrSrc} alt="QR vé" className="w-56 h-56" />
+        {/* Ticket code (no QR) */}
+        <div className="px-6 py-5 text-center border-b border-border">
+          <div className="inline-flex items-center gap-2 text-caption text-muted-foreground">
+            <Ticket className="w-3.5 h-3.5" />
+            Mã vé
           </div>
-          <p className="text-caption text-muted-foreground mt-3">Mã vé</p>
-          <p className="text-3xl font-mono tracking-[0.4em] font-bold text-foreground">
+          <p className="text-4xl font-mono tracking-[0.4em] font-bold text-foreground mt-1">
             {code}
-          </p>
-          {!b.ticket_code && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Đang chờ xác nhận...{" "}
-              <button
-                onClick={() => refetch()}
-                className="text-primary hover:underline"
-              >
-                kiểm tra lại
-              </button>
-            </p>
-          )}
-          <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-            Xuất trình mã QR này tại barrier để check-in / check-out.
           </p>
         </div>
       </div>
 
-      {/* Details */}
+      {/* PRIMARY: Slot Lock Control — main feature of the ticket */}
+      {canControlLock && (
+        <SlotLockControl bookingId={b.id} initialLocked={false} />
+      )}
+
+      {/* Booking details */}
       <AppCard className="p-4">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
           <Field label="Biển số" value={b.plate} mono />

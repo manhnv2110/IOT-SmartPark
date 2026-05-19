@@ -151,6 +151,9 @@ export async function buildPaymentUrl(input: BuildPaymentUrlInput): Promise<stri
 /**
  * Verify HMAC trên params VNPay gửi về (Return URL hoặc IPN).
  * Loại bỏ `vnp_SecureHash` & `vnp_SecureHashType` trước khi sign.
+ *
+ * VNPay sign data format: sort params alphabetically, join as key=value&key=value
+ * WITHOUT URL-encoding the values (values are raw/decoded).
  */
 export async function verifyVnpaySignature(
   query: Record<string, string>,
@@ -166,6 +169,7 @@ export async function verifyVnpaySignature(
     filtered[k] = v;
   }
 
+  // VNPay signs: sorted params joined as key=value (URL-encoded values)
   const { signData } = buildSignedQuery(filtered);
   const computed = await hmacSha512Hex(cfg.hashSecret, signData);
 

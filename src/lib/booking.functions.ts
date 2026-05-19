@@ -119,7 +119,7 @@ export const cancelBooking = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("user_id", userId)
       .eq("status", "pending")
-      .select("id")
+      .select("id, lot_device_id, slot_index")
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!updated) {
@@ -128,6 +128,26 @@ export const cancelBooking = createServerFn({ method: "POST" })
       );
     }
     await supabase.from("slot_holds").delete().eq("booking_id", data.id);
+
+    // Lock the slot back when booking is cancelled (best-effort)
+    if (updated.lot_device_id && updated.slot_index != null) {
+      try {
+        const { iotClient } = await import("@/lib/iot-api");
+        const iotToken = process.env.IOT_ADMIN_TOKEN;
+        if (iotToken) {
+          const sensorData = await iotClient.getLatestValues(iotToken, updated.lot_device_id);
+          const slot = sensorData[updated.slot_index];
+          const slotNumber = slot?.slot_number ?? `A${updated.slot_index + 1}`;
+          await iotClient.sendLockCommand(updated.lot_device_id, {
+            slot_number: slotNumber,
+            locked: true,
+          });
+        }
+      } catch {
+        // Non-blocking
+      }
+    }
+
     return { ok: true };
   });
 
@@ -143,4 +163,101 @@ export const listMyBookings = createServerFn({ method: "GET" })
       .limit(50);
     if (error) throw new Error(error.message);
     return data ?? [];
+  });
+
+/**
+ * Toggle lock/unlock for a user's paid/active booking slot.
+ * Only the booking owner can control the lock, and only for paid/active bookings.
+ */
+const ToggleLockInput = z.object({
+  bookingId: z.string().uuid(),
+  locked: z.boolean(),
+});
+
+export const toggleSlotLock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { bookingId: string; locked: boolean }) =>
+    ToggleLockInput.parse(input)
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // 1. Verify booking ownership and status
+    const { data: booking, error } = await supabase
+      .from("bookings")
+      .select("id, lot_device_id, slot_index, status, start_at, end_at")
+      .eq("id", data.bookingId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!booking) throw new Error("Không tìm thấy đơn đặt chỗ");
+
+    // Only allow lock control for paid/active bookings
+    if (booking.status !== "paid" && booking.status !== "active") {
+      throw new Error("Chỉ có thể điều khiển khoá khi đơn đã thanh toán hoặc đang hoạt động");
+    }
+
+    // Check booking hasn't expired
+    if (new Date(booking.end_at).getTime() < Date.now()) {
+      throw new Error("Đơn đã hết hạn — không thể điều khiển khoá");
+    }
+
+    if (!booking.lot_device_id) {
+      throw new Error("Đơn không có thông tin bãi đỗ");
+    }
+
+    // 2. Resolve slot_index → slot_number
+    const { iotClient } = await import("@/lib/iot-api");
+    const iotToken = process.env.IOT_ADMIN_TOKEN;
+    if (!iotToken) throw new Error("Hệ thống IoT chưa được cấu hình");
+
+    let slotNumber: string;
+    try {
+      const sensorData = await iotClient.getLatestValues(iotToken, booking.lot_device_id);
+      if (booking.slot_index != null && sensorData[booking.slot_index]) {
+        slotNumber = sensorData[booking.slot_index].slot_number;
+      } else if (booking.slot_index != null) {
+        slotNumber = `A${booking.slot_index + 1}`;
+      } else {
+        // No specific slot — use first available slot from sensor data
+        slotNumber = sensorData[0]?.slot_number ?? "A1";
+      }
+    } catch {
+      // Fallback to computed slot number
+      slotNumber = booking.slot_index != null ? `A${booking.slot_index + 1}` : "A1";
+    }
+
+    // 3. Send lock command to IoT device
+    try {
+      await iotClient.sendLockCommand(booking.lot_device_id, {
+        slot_number: slotNumber,
+        locked: data.locked,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Lỗi không xác định";
+      throw new Error(`Không thể gửi lệnh ${data.locked ? "khoá" : "mở khoá"}: ${msg}`);
+    }
+
+    // 4. Verify: read back sensor data to confirm device executed the command
+    let confirmed = false;
+    try {
+      // Small delay to let the device process the command
+      await new Promise((r) => setTimeout(r, 800));
+      const verifyData = await iotClient.getLatestValues(iotToken, booking.lot_device_id);
+      const targetSlot = verifyData.find((s) => s.slot_number === slotNumber);
+      if (targetSlot && targetSlot.locked === data.locked) {
+        confirmed = true;
+      }
+    } catch {
+      // Verification failed but command was sent — report as unconfirmed
+    }
+
+    return {
+      ok: true,
+      locked: data.locked,
+      confirmed,
+      slotNumber,
+      deviceId: booking.lot_device_id,
+    };
   });
