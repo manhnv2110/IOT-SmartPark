@@ -8,11 +8,11 @@ interface Props {
 }
 
 const ITEMS: Array<{ key: keyof RecommenderWeights; label: string; hint: string }> = [
-  { key: "w1", label: "Khoang cach", hint: "Cang gan cang tot" },
-  { key: "w2", label: "Con nhieu cho", hint: "Ti le trong hien tai" },
-  { key: "w3", label: "Gia thap", hint: "Phi theo gio" },
-  { key: "w4", label: "Do tin cay", hint: "Lich su on dinh" },
-  { key: "w5", label: "Du doan", hint: "Con cho khi toi noi" },
+  { key: "w1", label: "Khoảng cách", hint: "Càng gần càng tốt" },
+  { key: "w2", label: "Còn nhiều chỗ", hint: "Tỉ ệ trống hiện tại" },
+  { key: "w3", label: "Giá thấp", hint: "Phí theo giờ" },
+  { key: "w4", label: "Độ ổn định", hint: "Lịch sử ổn định" },
+  { key: "w5", label: "Dự đoán", hint: "Còn cho tới khi tới nơi" },
 ];
 
 export function WeightSliders({ value, onChange, className }: Props) {

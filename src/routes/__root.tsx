@@ -12,7 +12,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { Header } from "@/components/Header";
 import { ReservationBanner } from "@/components/parking/ReservationBanner";
 import { RouteBreadcrumb } from "@/components/RouteBreadcrumb";
-import { OfflineBanner } from "@/components/OfflineBanner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Compass, Map, Heart } from "lucide-react";
 import appCss from "../styles.css?url";
@@ -144,7 +143,6 @@ function RootComponent() {
       <a href="#main" className="skip-link">
         Đến nội dung chính
       </a>
-      <OfflineBanner />
       <Header />
       <ReservationBanner />
       <main
