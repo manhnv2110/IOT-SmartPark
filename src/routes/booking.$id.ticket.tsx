@@ -10,11 +10,12 @@ import {
   ListChecks,
   Share2,
   CheckCircle2,
-  Ticket,
+  Car,
+  Clock,
+  CreditCard,
 } from "lucide-react";
 import { getBooking } from "@/lib/booking.functions";
 import { isValidBookingId } from "@/lib/booking-id";
-import { AppCard } from "@/components/ui/app-card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { BookingErrorState } from "@/components/booking/BookingErrorState";
@@ -49,9 +50,9 @@ function TicketPage() {
 
   if (loading || isLoading)
     return (
-      <main className="mx-auto max-w-md px-4 py-16 text-center">
+      <main className="mx-auto max-w-lg px-4 py-16 text-center">
         <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary mb-3" />
-        <p className="text-muted-foreground">Đang tải vé...</p>
+        <p className="text-muted-foreground text-sm">Đang tải thông tin vé...</p>
       </main>
     );
   if (!b)
@@ -67,7 +68,7 @@ function TicketPage() {
     return (
       <BookingErrorState
         title="Đơn chưa thanh toán"
-        description="Hoàn tất thanh toán trước khi nhận vé."
+        description="Hoàn tất thanh toán trước khi sử dụng."
         ctaTo="/booking/$id/pay"
         ctaLabel="Tới trang thanh toán"
       />
@@ -78,7 +79,7 @@ function TicketPage() {
     return (
       <BookingErrorState
         title="Đơn đã huỷ"
-        description="Đơn này đã được huỷ — không có vé."
+        description="Đơn này đã được huỷ."
         ctaTo="/lots"
         ctaLabel="Đặt đơn mới"
       />
@@ -99,21 +100,14 @@ function TicketPage() {
   const code = b.ticket_code ?? "------";
   const amount = Number(b.amount ?? 0);
 
-  const statusInfo =
-    b.status === "active" || b.checkin_at
-      ? { label: "ĐANG GỬI XE" }
-      : b.status === "completed"
-        ? { label: "ĐÃ HOÀN THÀNH" }
-        : { label: "ĐÃ THANH TOÁN" };
-
   const canControlLock =
     (b.status === "paid" || b.status === "active") && !!b.lot_device_id;
 
   const handleShare = async () => {
-    const shareText = `Vé gửi xe SmartPark\nMã: ${code}\nBãi: ${b.lot_name ?? b.lot_device_id}\nBiển số: ${b.plate}`;
+    const shareText = `SmartPark — Mã vé: ${code}\nBãi: ${b.lot_name ?? b.lot_device_id}\nBiển số: ${b.plate}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Vé gửi xe SmartPark", text: shareText });
+        await navigator.share({ title: "Vé SmartPark", text: shareText });
       } catch {
         /* user cancelled */
       }
@@ -124,150 +118,206 @@ function TicketPage() {
   };
 
   return (
-    <main className="mx-auto max-w-md px-4 py-6 space-y-5">
+    <main className="mx-auto max-w-lg px-4 py-6 space-y-4">
       <BookingStepper status={b.status} />
 
-      {/* Ticket header card — replaces the QR boarding-pass */}
-      <div className="relative rounded-3xl bg-card shadow-ticket overflow-hidden">
-        <div className="gradient-pay px-6 py-5 text-primary-foreground">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-wider opacity-90">SmartPark</p>
-              <h1 className="text-xl font-bold mt-0.5">Vé gửi xe</h1>
+      {/* ─── Ticket Summary Card ─── */}
+      <section className="rounded-2xl glass-strong overflow-hidden">
+        {/* Top gradient bar */}
+        <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400" />
+
+        <div className="p-5 space-y-4">
+          {/* Location + status */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 grid place-items-center shrink-0">
+                <MapPin className="w-4.5 h-4.5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-sm text-foreground truncate">
+                  {b.lot_name ?? b.lot_device_id}
+                </p>
+                {b.slot_index != null && (
+                  <p className="text-xs text-muted-foreground">
+                    Chỗ #{b.slot_index + 1}
+                  </p>
+                )}
+              </div>
             </div>
-            <span
-              className={cn(
-                "px-2.5 py-1 rounded-full text-[10px] font-bold border bg-white/95 text-primary border-white",
-              )}
-            >
-              {statusInfo.label}
-            </span>
+            <StatusBadge status={b.status} checkinAt={b.checkin_at} />
           </div>
-          <div className="flex items-center gap-2 mt-3 text-sm opacity-95">
-            <MapPin className="w-4 h-4" />
-            <span className="truncate font-medium">
-              {b.lot_name ?? b.lot_device_id}
-            </span>
-            {b.slot_index != null && (
-              <span className="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full">
-                Slot #{b.slot_index + 1}
-              </span>
-            )}
+
+          {/* Ticket code */}
+          <div className="text-center py-3 rounded-xl bg-muted/50 border border-border/50">
+            <p className="text-caption text-muted-foreground mb-1">Mã vé</p>
+            <p className="text-3xl font-mono tracking-[0.35em] font-bold text-foreground">
+              {code}
+            </p>
           </div>
-        </div>
 
-        {/* Ticket code (no QR) */}
-        <div className="px-6 py-5 text-center border-b border-border">
-          <div className="inline-flex items-center gap-2 text-caption text-muted-foreground">
-            <Ticket className="w-3.5 h-3.5" />
-            Mã vé
-          </div>
-          <p className="text-4xl font-mono tracking-[0.4em] font-bold text-foreground mt-1">
-            {code}
-          </p>
-        </div>
-      </div>
-
-      {/* PRIMARY: Slot Lock Control — main feature of the ticket */}
-      {canControlLock && (
-        <SlotLockControl bookingId={b.id} initialLocked={false} />
-      )}
-
-      {/* Booking details */}
-      <AppCard className="p-4">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-          <Field label="Biển số" value={b.plate} mono />
-          <Field
-            label="Loại xe"
-            value={b.vehicle_type === "car" ? "Ô tô" : "Xe máy"}
-          />
-          <Field
-            label="Giờ vào"
-            value={new Date(b.start_at).toLocaleString("vi", {
-              dateStyle: "short",
-              timeStyle: "short",
-            })}
-          />
-          <Field
-            label="Giờ ra dự kiến"
-            value={new Date(b.end_at).toLocaleString("vi", {
-              dateStyle: "short",
-              timeStyle: "short",
-            })}
-          />
-          {b.checkin_at && (
-            <Field
-              label="Đã vào lúc"
-              value={new Date(b.checkin_at).toLocaleString("vi", {
+          {/* Info grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <InfoCell
+              icon={<Car className="w-3.5 h-3.5" />}
+              label="Biển số"
+              value={b.plate}
+              mono
+            />
+            <InfoCell
+              icon={<Car className="w-3.5 h-3.5" />}
+              label="Loại xe"
+              value={b.vehicle_type === "car" ? "Ô tô" : "Xe máy"}
+            />
+            <InfoCell
+              icon={<Clock className="w-3.5 h-3.5" />}
+              label="Giờ vào"
+              value={new Date(b.start_at).toLocaleString("vi", {
                 dateStyle: "short",
                 timeStyle: "short",
               })}
             />
-          )}
-          <Field
-            label="Đã thanh toán"
-            value={`${amount.toLocaleString("vi")} đ`}
-            highlight
-          />
-        </div>
-        {b.paid_at && (
-          <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 text-xs text-muted-foreground">
-            <CheckCircle2 className="w-3.5 h-3.5 text-available" />
-            Thanh toán lúc{" "}
-            {new Date(b.paid_at).toLocaleString("vi", {
-              dateStyle: "short",
-              timeStyle: "short",
-            })}
+            <InfoCell
+              icon={<Clock className="w-3.5 h-3.5" />}
+              label="Giờ ra"
+              value={new Date(b.end_at).toLocaleString("vi", {
+                dateStyle: "short",
+                timeStyle: "short",
+              })}
+            />
           </div>
-        )}
-      </AppCard>
 
-      {/* Actions */}
-      <div className="grid grid-cols-3 gap-2">
-        <Button asChild variant="outline" size="sm">
+          {/* Payment confirmation */}
+          {b.paid_at && (
+            <div className="flex items-center gap-2 pt-3 border-t border-border/50">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground">
+                  Đã thanh toán{" "}
+                  <span className="font-semibold text-foreground">
+                    {amount.toLocaleString("vi")}đ
+                  </span>
+                  {" · "}
+                  {new Date(b.paid_at).toLocaleString("vi", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  })}
+                </p>
+              </div>
+              <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─── Lock/Unlock Control (primary action) ─── */}
+      {canControlLock && (
+        <section>
+          <SlotLockControl bookingId={b.id} initialLocked={false} />
+        </section>
+      )}
+
+      {/* ─── Quick Actions ─── */}
+      <section className="grid grid-cols-3 gap-2">
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="rounded-xl h-10 text-xs gap-1.5 border-border/60 hover:bg-muted/50"
+        >
           <Link to="/map" search={{ route: b.lot_device_id }}>
-            <Navigation className="w-4 h-4 mr-1.5" />
+            <Navigation className="w-3.5 h-3.5" />
             Chỉ đường
           </Link>
         </Button>
-        <Button asChild variant="outline" size="sm">
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="rounded-xl h-10 text-xs gap-1.5 border-border/60 hover:bg-muted/50"
+        >
           <Link to="/bookings">
-            <ListChecks className="w-4 h-4 mr-1.5" />
+            <ListChecks className="w-3.5 h-3.5" />
             Đơn của tôi
           </Link>
         </Button>
-        <Button variant="outline" size="sm" onClick={handleShare}>
-          <Share2 className="w-4 h-4 mr-1.5" />
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-xl h-10 text-xs gap-1.5 border-border/60 hover:bg-muted/50"
+          onClick={handleShare}
+        >
+          <Share2 className="w-3.5 h-3.5" />
           Chia sẻ
         </Button>
-      </div>
+      </section>
     </main>
   );
 }
 
-function Field({
+/* ─── Sub-components ─── */
+
+function StatusBadge({
+  status,
+  checkinAt,
+}: {
+  status: string;
+  checkinAt: string | null;
+}) {
+  const isActive = status === "active" || !!checkinAt;
+  const isCompleted = status === "completed";
+
+  const label = isActive
+    ? "Đang gửi"
+    : isCompleted
+      ? "Hoàn thành"
+      : "Đã thanh toán";
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wide shrink-0",
+        isActive && "bg-teal-500/10 text-teal-600 border border-teal-500/20",
+        isCompleted && "bg-muted text-muted-foreground border border-border",
+        !isActive &&
+          !isCompleted &&
+          "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+      )}
+    >
+      {isActive && (
+        <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+      )}
+      {label}
+    </span>
+  );
+}
+
+function InfoCell({
+  icon,
   label,
   value,
   mono,
-  highlight,
 }: {
+  icon: React.ReactNode;
   label: string;
   value: string;
   mono?: boolean;
-  highlight?: boolean;
 }) {
   return (
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p
-        className={cn(
-          "font-medium mt-0.5",
-          mono && "font-mono",
-          highlight && "text-primary font-semibold",
-        )}
-      >
-        {value}
-      </p>
+    <div className="flex items-start gap-2 p-2.5 rounded-xl bg-muted/30 border border-border/30">
+      <div className="text-muted-foreground mt-0.5">{icon}</div>
+      <div className="min-w-0">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+          {label}
+        </p>
+        <p
+          className={cn(
+            "text-sm font-medium text-foreground truncate mt-0.5",
+            mono && "font-mono"
+          )}
+        >
+          {value}
+        </p>
+      </div>
     </div>
   );
 }
