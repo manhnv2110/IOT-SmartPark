@@ -8,10 +8,14 @@ import { useRouting, type RouteTarget } from "@/hooks/useRouting";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ParkingMap } from "@/components/map/ParkingMap";
 import { RoutePanel } from "@/components/map/RoutePanel";
+import { AiParkingAssistant } from "@/components/parking/AiParkingAssistant";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { MapPin, Navigation } from "lucide-react";
+import { MapPin, Navigation, Sparkles, List } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type MapSearch = { route?: string; select?: string };
+type SidebarTab = "list" | "ai";
 
 export const Route = createFileRoute("/map")({
   validateSearch: (s: Record<string, unknown>): MapSearch => ({
@@ -23,7 +27,7 @@ export const Route = createFileRoute("/map")({
       { title: "Bản đồ bãi đỗ — SmartPark" },
       {
         name: "description",
-        content: "Bản đồ bãi đỗ xe IoT realtime với chỉ đường ngắn nhất.",
+        content: "Bản đồ bãi đỗ xe IoT realtime với chỉ đường ngắn nhất và trợ lý AI.",
       },
     ],
   }),
@@ -53,6 +57,8 @@ function MapPage() {
   const [selectedId, setSelectedId] = useState<string | null>(
     search.select ?? search.route ?? null,
   );
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>("list");
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
   const routing = useRouting(pos, requestPos);
   const sorted = useSortedLots(devices, pos);
@@ -81,14 +87,43 @@ function MapPage() {
     routing.routeTo(target);
   };
 
+  /**
+   * Khi AI đề xuất "Chỉ đường" → tra toạ độ trong sorted (đã merge real +
+   * mock) và chuyển cho routing engine. Đóng drawer mobile sau khi gọi.
+   */
+  const handleAiRouteLot = (lotId: string, lotName: string) => {
+    const target = sorted.find((l) => l.id === lotId);
+    if (!target || target.lat == null || target.lng == null) {
+      toast.error("Không tìm được toạ độ bãi này.");
+      return;
+    }
+    routing.routeTo({
+      id: target.id,
+      name: target.name ?? lotName,
+      lat: target.lat,
+      lng: target.lng,
+    });
+    setAiDrawerOpen(false);
+  };
+
+  /**
+   * Khi AI đề xuất "Xem trên bản đồ" → highlight pin và chuyển sidebar về
+   * danh sách để dễ xem chi tiết. Trên mobile, đóng drawer.
+   */
+  const handleAiSelectLot = (lotId: string) => {
+    setSelectedId(lotId);
+    setSidebarTab("list");
+    setAiDrawerOpen(false);
+  };
+
   // Khi đang chỉ đường: ẩn list, hiện RoutePanel ở sidebar (desktop)
   // hoặc bottom drawer (mobile).
   const showRoutePanel = !!routing.route;
 
   return (
-    <div className="grid lg:grid-cols-[360px_1fr] gap-4 min-h-[500px] h-[calc(100dvh-140px)]">
+    <div className="grid lg:grid-cols-[380px_1fr] gap-4 min-h-[500px] h-[calc(100dvh-140px)]">
       {/* SIDEBAR (desktop only) */}
-      <aside className="hidden lg:flex rounded-2xl glass overflow-hidden flex-col">
+      <aside className="hidden lg:flex rounded-2xl glass overflow-hidden flex-col min-h-0">
         {showRoutePanel ? (
           <RoutePanel
             routing={routing}
@@ -98,12 +133,26 @@ function MapPage() {
             }}
           />
         ) : (
-          <LotList
-            sorted={sorted}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onRoute={handleRequestRoute}
-          />
+          <>
+            <SidebarTabs tab={sidebarTab} onChange={setSidebarTab} />
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {sidebarTab === "list" ? (
+                <LotList
+                  sorted={sorted}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                  onRoute={handleRequestRoute}
+                />
+              ) : (
+                <AiParkingAssistant
+                  compact
+                  onSelectLot={handleAiSelectLot}
+                  onRouteLot={handleAiRouteLot}
+                  className="h-full"
+                />
+              )}
+            </div>
+          </>
         )}
       </aside>
 
@@ -125,6 +174,20 @@ function MapPage() {
             onRequestRoute={handleRequestRoute}
           />
         </ClientOnly>
+
+        {/* MOBILE FAB: mở AI Assistant — ẩn khi đang chỉ đường (đã có
+            bottom-sheet RoutePanel chiếm chỗ) */}
+        {!showRoutePanel && (
+          <button
+            type="button"
+            onClick={() => setAiDrawerOpen(true)}
+            aria-label="Mở Trợ lý AI"
+            className="lg:hidden absolute bottom-5 right-5 z-[500] h-12 pl-4 pr-5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_10px_30px_-8px_rgba(16,185,129,0.55)] inline-flex items-center gap-2 text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+          >
+            <Sparkles className="size-4" />
+            Trợ lý AI
+          </button>
+        )}
       </div>
 
       {/* MOBILE: list ở dưới map (nếu chưa route), bottom-sheet khi route active */}
@@ -158,11 +221,85 @@ function MapPage() {
           </DrawerContent>
         </Drawer>
       )}
+
+      {/* MOBILE: bottom sheet chứa AI Assistant */}
+      {isMobile && (
+        <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
+          <DrawerContent className="max-h-[85vh] p-0 outline-none flex flex-col">
+            <DrawerTitle className="sr-only">Trợ lý tìm bãi đỗ AI</DrawerTitle>
+            <div className="px-5 py-4 border-b border-border/60 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="size-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 grid place-items-center">
+                  <Sparkles className="size-4 text-emerald-600" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-sm text-foreground">
+                    Trợ lý tìm bãi đỗ AI
+                  </h2>
+                  <p className="text-[11px] text-muted-foreground">
+                    Mô tả nơi bạn muốn đến — AI sẽ gợi ý bãi phù hợp
+                  </p>
+                </div>
+              </div>
+            </div>
+            <AiParkingAssistant
+              compact
+              onSelectLot={handleAiSelectLot}
+              onRouteLot={handleAiRouteLot}
+              className="h-[70vh]"
+            />
+          </DrawerContent>
+        </Drawer>
+      )}
     </div>
   );
 }
 
 /* ---------- helpers ---------- */
+
+function SidebarTabs({
+  tab,
+  onChange,
+}: {
+  tab: SidebarTab;
+  onChange: (t: SidebarTab) => void;
+}) {
+  const items: { id: SidebarTab; label: string; icon: typeof List }[] = [
+    { id: "list", label: "Bãi gần đây", icon: List },
+    { id: "ai", label: "Trợ lý AI", icon: Sparkles },
+  ];
+  return (
+    <div className="px-3 pt-3 pb-2 border-b border-border/60 shrink-0">
+      <div className="inline-flex w-full p-1 rounded-xl bg-muted/60 gap-1">
+        {items.map((it) => {
+          const active = tab === it.id;
+          const Icon = it.icon;
+          return (
+            <button
+              key={it.id}
+              type="button"
+              onClick={() => onChange(it.id)}
+              className={cn(
+                "flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                active
+                  ? "bg-card text-foreground shadow-[var(--shadow-1)]"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon
+                className={cn(
+                  "size-3.5",
+                  active && it.id === "ai" && "text-emerald-500",
+                )}
+              />
+              {it.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function useSortedLots(
   devices: ReturnType<typeof useParkingDevices>["data"] extends
@@ -235,10 +372,10 @@ function LotList({
   compact?: boolean;
 }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-border">
-        <h1 className="font-semibold tracking-tight">Bãi đỗ gần bạn</h1>
-        <p className="text-xs text-muted-foreground">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="px-4 pt-3 pb-2 shrink-0">
+        <h1 className="font-semibold tracking-tight text-sm">Bãi đỗ gần bạn</h1>
+        <p className="text-[11px] text-muted-foreground">
           {sorted.length} bãi · Sắp xếp theo khoảng cách
         </p>
       </div>
@@ -246,13 +383,13 @@ function LotList({
         className={
           compact
             ? "max-h-[280px] overflow-y-auto scrollbar-thin"
-            : "flex-1 overflow-y-auto scrollbar-thin"
+            : "flex-1 min-h-0 overflow-y-auto scrollbar-thin"
         }
       >
         {sorted.map((lot) => (
           <div
             key={lot.id}
-            className={`px-4 py-3 border-b border-border/50 hover:bg-accent/40 transition-colors ${
+            className={`px-4 py-3 border-t border-border/50 hover:bg-accent/40 transition-colors ${
               selectedId === lot.id ? "bg-accent/60" : ""
             }`}
           >

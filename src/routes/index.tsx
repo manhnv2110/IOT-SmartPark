@@ -14,7 +14,6 @@ import { useParkingDevices } from "@/hooks/useParkingDevices";
 import { computeStats, getDeviceId } from "@/lib/parking.types";
 import { LotCard } from "@/components/parking/LotCard";
 import { NearestLotCard } from "@/components/map/NearestLotCard";
-import { AiParkingAssistant } from "@/components/parking/AiParkingAssistant";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -129,9 +128,6 @@ function Index() {
 
       {/* Nearest quick action */}
       <NearestLotCard devices={devices} />
-
-      {/* AI Parking Assistant */}
-      <AiParkingAssistant />
 
       {/* HOW IT WORKS */}
       <section>
