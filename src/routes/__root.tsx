@@ -13,7 +13,7 @@ import { Header } from "@/components/Header";
 import { ReservationBanner } from "@/components/parking/ReservationBanner";
 import { RouteBreadcrumb } from "@/components/RouteBreadcrumb";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Compass, Map, Heart } from "lucide-react";
+import { Compass, Map } from "lucide-react";
 import appCss from "../styles.css?url";
 // Side-effect import: installs idempotent global `error` and `unhandledrejection`
 // listeners that forward thrown values into `error-capture` (Auth_Reporter).
@@ -181,11 +181,9 @@ function RootComponent() {
                 </Link>
               </nav>
             </div>
-            <div className="mt-8 pt-6 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] font-medium text-muted-foreground/80">
-              <p>© {new Date().getFullYear()} SmartPark — UET IoT Project. Mọi quyền được bảo lưu.</p>
-              <p className="flex items-center gap-1.5">
-                Được phát triển với <Heart className="size-3 text-destructive fill-destructive" /> tại Hà Nội
-              </p>
+            <div className="mt-8 pt-6 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-medium text-muted-foreground/80">
+              <p>© {new Date().getFullYear()} SmartPark. All rights reserved.</p>
+              <p>Realtime IoT Parking Network</p>
             </div>
           </div>
         </footer>

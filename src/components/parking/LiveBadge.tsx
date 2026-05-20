@@ -21,7 +21,7 @@ export function LiveBadge({ className }: { className?: string }) {
         />
       </span>
       <span className="text-muted-foreground">
-        {ok ? (isFetching ? "Đồng bộ..." : "Trực tuyến") : "Mất kết nối"}
+        {ok ? (isFetching ? "Đang đồng bộ" : "Realtime") : "Mất kết nối"}
       </span>
     </div>
   );

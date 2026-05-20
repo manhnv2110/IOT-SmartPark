@@ -80,7 +80,7 @@ function Index() {
               <span className="relative inline-flex size-2">
                 <span className="size-2 rounded-full bg-[var(--available)] animate-pulse-dot" />
               </span>
-              Realtime IoT Network · Cập nhật mỗi 3s
+              Realtime IoT Network
             </span>
 
             {/* Title */}
@@ -147,7 +147,7 @@ function Index() {
             n="01"
             icon={<Radar className="size-5 text-primary" strokeWidth={2.25} />}
             title="Cảm biến IoT Realtime"
-            desc="Dữ liệu trạng thái slot gửi trực tiếp từ các cảm biến vật lý mỗi 3 giây thông qua API REST kết nối siêu tốc."
+            desc="Trạng thái từng slot được cập nhật liên tục từ cảm biến vật lý — không cần làm mới trang."
           />
           <Step
             n="02"

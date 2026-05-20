@@ -31,7 +31,7 @@ const features = [
   {
     icon: MapPin,
     title: "Bản đồ realtime",
-    desc: "Xem trạng thái slot trống/đầy trên bản đồ, cập nhật tự động mỗi 3 giây từ cảm biến IoT.",
+    desc: "Xem trạng thái slot trống/đầy trên bản đồ, cập nhật liên tục từ cảm biến IoT.",
     color: "bg-[var(--available)]/15 text-[var(--available)]",
   },
   {
@@ -61,15 +61,15 @@ const features = [
   {
     icon: Zap,
     title: "Trải nghiệm mượt mà",
-    desc: "Polling thích ứng, lazy load 3D, dark mode, responsive — tối ưu cho mọi thiết bị.",
+    desc: "Cập nhật thích ứng, lazy load 3D, dark mode, responsive — tối ưu cho mọi thiết bị.",
     color: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   },
 ];
 
 const stats = [
-  { label: "Cập nhật", value: "3s", sub: "Realtime IoT" },
+  { label: "Dữ liệu", value: "Live", sub: "Realtime IoT" },
   { label: "Bản đồ", value: "3D", sub: "Tương tác" },
-  { label: "Thanh toán", value: "VNPay", sub: "Sandbox" },
+  { label: "Thanh toán", value: "VNPay", sub: "Bảo mật" },
   { label: "Insights", value: "AI", sub: "Dự báo" },
 ];
 
@@ -95,7 +95,7 @@ function About() {
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto text-pretty leading-relaxed">
             Hệ thống tìm bãi đỗ xe IoT thông minh — từ cảm biến đến chỗ đỗ, mọi thứ realtime
-            và tự động. Dữ liệu cập nhật mỗi 3 giây, đặt chỗ chỉ trong vài chạm.
+            và tự động. Đặt chỗ chỉ trong vài chạm.
           </p>
         </motion.div>
 

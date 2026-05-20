@@ -187,7 +187,7 @@ function DeviceDetail() {
             {device.is_online ? (
               <span className="inline-flex items-center gap-1.5 text-[var(--available)]">
                 <span className="size-2 rounded-full bg-[var(--available)] animate-pulse-dot" />
-                <Wifi className="size-3.5" strokeWidth={2.5} /> Cảm biến trực tuyến
+                <Wifi className="size-3.5" strokeWidth={2.5} /> Cảm biến hoạt động
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 text-muted-foreground">
