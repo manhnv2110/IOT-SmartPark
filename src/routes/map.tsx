@@ -1,6 +1,7 @@
 import { createFileRoute, ClientOnly, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useParkingDevices } from "@/hooks/useParkingDevices";
+import { useBookingCounts } from "@/hooks/useBookingCounts";
 import { computeStats, getDeviceId } from "@/lib/parking.types";
 import { lookupCoord, MOCK_LOTS } from "@/lib/lot-coordinates";
 import { useGeolocation, haversineKm } from "@/hooks/useGeolocation";
@@ -53,6 +54,7 @@ function MapPage() {
   const { pos, request: requestPos } = useGeolocation();
   const search = Route.useSearch();
   const isMobile = useIsMobile();
+  const { adjustAvailable } = useBookingCounts();
 
   const [selectedId, setSelectedId] = useState<string | null>(
     search.select ?? search.route ?? null,
@@ -61,7 +63,7 @@ function MapPage() {
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
   const routing = useRouting(pos, requestPos);
-  const sorted = useSortedLots(devices, pos);
+  const sorted = useSortedLots(devices, pos, adjustAvailable);
 
   // Auto-route khi user vào với ?route=<id>
   useEffect(() => {
@@ -309,17 +311,19 @@ function useSortedLots(
     ? D
     : never,
   pos: { lat: number; lng: number } | null,
+  adjustAvailable: (lotDeviceId: string, sensorAvailable: number) => number,
 ): SortedLot[] {
   return useMemo(() => {
     const items: SortedLot[] = [
       ...(devices ?? []).map((d) => {
         const c = lookupCoord(d.name);
         const s = computeStats(d);
+        const id = getDeviceId(d);
         return {
-          id: getDeviceId(d),
+          id,
           name: d.name,
           description: d.description ?? "",
-          available: s.available,
+          available: adjustAvailable(id, s.available),
           total: s.total,
           isOnline: d.is_online,
           isReal: true as const,

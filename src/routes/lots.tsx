@@ -6,6 +6,7 @@ import { computeStats, getDeviceId, type Device } from "@/lib/parking.types";
 import { LotCard } from "@/components/parking/LotCard";
 import { LiveBadge } from "@/components/parking/LiveBadge";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useBookingCounts } from "@/hooks/useBookingCounts";
 import { useGeolocation, haversineKm } from "@/hooks/useGeolocation";
 import { lookupCoord } from "@/lib/lot-coordinates";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -120,6 +121,7 @@ function FilteredGrid({
 }) {
   const { isFav } = useFavorites();
   const { pos } = useGeolocation();
+  const { getBookedCount } = useBookingCounts();
 
   const list = useMemo(() => {
     const ql = q.trim().toLowerCase();
@@ -192,7 +194,7 @@ function FilteredGrid({
       {apiError && <ApiErrorAlert message={apiError} />}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {list.map((d) => (
-          <LotCard key={getDeviceId(d)} device={d} />
+          <LotCard key={getDeviceId(d)} device={d} bookedSlots={getBookedCount(getDeviceId(d))} />
         ))}
       </div>
     </div>

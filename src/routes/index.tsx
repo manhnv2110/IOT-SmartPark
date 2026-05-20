@@ -14,6 +14,7 @@ import { useParkingDevices } from "@/hooks/useParkingDevices";
 import { computeStats, getDeviceId } from "@/lib/parking.types";
 import { LotCard } from "@/components/parking/LotCard";
 import { NearestLotCard } from "@/components/map/NearestLotCard";
+import { useBookingCounts } from "@/hooks/useBookingCounts";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { data } = useParkingDevices();
   const devices = data?.devices ?? [];
+  const { getBookedCount } = useBookingCounts();
 
   const totals = useMemo(() => {
     let online = 0;
@@ -188,7 +190,7 @@ function Index() {
                   className="h-44 rounded-2xl bg-card border border-border animate-pulse"
                 />
               ))
-            : top.map(({ d }) => <LotCard key={getDeviceId(d)} device={d} />)}
+            : top.map(({ d }) => <LotCard key={getDeviceId(d)} device={d} bookedSlots={getBookedCount(getDeviceId(d))} />)}
         </div>
       </section>
 

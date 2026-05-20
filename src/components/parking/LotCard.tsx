@@ -7,9 +7,11 @@ import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-export function LotCard({ device }: { device: Device }) {
+export function LotCard({ device, bookedSlots = 0 }: { device: Device; bookedSlots?: number }) {
   const id = getDeviceId(device);
   const stats = computeStats(device);
+  const adjustedAvailable = Math.max(0, stats.available - bookedSlots);
+  const adjustedOccRate = stats.total > 0 ? 1 - adjustedAvailable / stats.total : 0;
   const { isFav, toggle } = useFavorites();
   const fav = isFav(id);
   const nav = useNavigate();
@@ -55,14 +57,19 @@ export function LotCard({ device }: { device: Device }) {
         <div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-3xl font-extrabold font-mono tracking-tight text-foreground drop-shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
-              {stats.available}
+              {adjustedAvailable}
             </span>
             <span className="text-xs text-muted-foreground font-semibold">
               / {stats.total} chỗ trống
             </span>
           </div>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-1">
-            {Math.round(stats.occupancyRate * 100)}% lấp đầy
+            {Math.round(adjustedOccRate * 100)}% lấp đầy
+            {bookedSlots > 0 && (
+              <span className="text-amber-600 dark:text-amber-400 ml-1">
+                · {bookedSlots} đã đặt
+              </span>
+            )}
           </p>
         </div>
         
@@ -84,7 +91,7 @@ export function LotCard({ device }: { device: Device }) {
 
       <OccupancyBar
         className="mt-4 relative z-10"
-        available={stats.available}
+        available={adjustedAvailable}
         total={stats.total}
       />
 
