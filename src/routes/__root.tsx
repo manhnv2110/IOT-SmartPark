@@ -108,7 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         },
         {
           rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+          href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap",
         },
         { rel: "stylesheet", href: appCss },
       ],
@@ -140,58 +140,59 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <a href="#main" className="skip-link">
-        Đến nội dung chính
-      </a>
-      <Header />
-      <ReservationBanner />
-      <main
-        id="main"
-        className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 pb-24 sm:pb-8"
-      >
-        {!isHome && <RouteBreadcrumb />}
-        <Outlet />
-      </main>
+      <div className="stripe-bg-lines min-h-screen flex flex-col relative overflow-hidden">
+        <a href="#main" className="skip-link">
+          Đến nội dung chính
+        </a>
+        <Header />
+        <ReservationBanner />
+        <main
+          id="main"
+          className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 pb-24 sm:pb-8 flex-1 z-10 relative"
+        >
+          {!isHome && <RouteBreadcrumb />}
+          <Outlet />
+        </main>
 
-      {/* Minimal footer */}
-      <footer className="border-t border-border mt-auto">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Link to="/" className="flex items-center gap-2 font-semibold text-foreground text-sm">
-                <span className="size-6 rounded-lg bg-primary/15 grid place-items-center">
-                  <Map className="size-3 text-primary" />
-                </span>
-                SmartPark
-              </Link>
-              <span className="text-xs text-muted-foreground">·</span>
-              <span className="text-xs text-muted-foreground">
-                IoT Parking · Realtime
-              </span>
+        {/* Premium footer redesigned */}
+        <footer className="border-t border-border mt-auto backdrop-blur-md bg-card/10 z-10 relative">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="space-y-2">
+                <Link to="/" className="flex items-center gap-2.5 font-bold text-foreground text-sm tracking-tight">
+                  <span className="size-6 rounded-lg bg-primary/10 grid place-items-center">
+                    <Map className="size-3.5 text-primary" strokeWidth={2.5} />
+                  </span>
+                  SmartPark
+                </Link>
+                <p className="text-xs text-muted-foreground">
+                  Hệ thống định vị & đặt chỗ bãi đỗ xe thông minh IoT thời gian thực.
+                </p>
+              </div>
+              <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-semibold text-muted-foreground">
+                <Link to="/map" className="hover:text-primary transition-colors">
+                  Bản đồ
+                </Link>
+                <Link to="/lots" className="hover:text-primary transition-colors">
+                  Bãi đỗ
+                </Link>
+                <Link to="/insights" className="hover:text-primary transition-colors">
+                  Insights
+                </Link>
+                <Link to="/about" className="hover:text-primary transition-colors">
+                  Giới thiệu
+                </Link>
+              </nav>
             </div>
-            <nav className="flex items-center gap-4 text-xs text-muted-foreground">
-              <Link to="/map" className="hover:text-foreground transition-colors">
-                Bản đồ
-              </Link>
-              <Link to="/lots" className="hover:text-foreground transition-colors">
-                Bãi đỗ
-              </Link>
-              <Link to="/insights" className="hover:text-foreground transition-colors">
-                Insights
-              </Link>
-              <Link to="/about" className="hover:text-foreground transition-colors">
-                Giới thiệu
-              </Link>
-            </nav>
+            <div className="mt-8 pt-6 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] font-medium text-muted-foreground/80">
+              <p>© {new Date().getFullYear()} SmartPark — UET IoT Project. Mọi quyền được bảo lưu.</p>
+              <p className="flex items-center gap-1.5">
+                Được phát triển với <Heart className="size-3 text-destructive fill-destructive" /> tại Hà Nội
+              </p>
+            </div>
           </div>
-          <div className="mt-6 pt-4 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
-            <p>© {new Date().getFullYear()} SmartPark — UET IoT Project</p>
-            <p className="flex items-center gap-1">
-              Made with <Heart className="size-2.5 text-occupied fill-occupied" /> in Hanoi
-            </p>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
 
       {/*
         Sonner is mounted exactly once at the root. Toast deduplication is

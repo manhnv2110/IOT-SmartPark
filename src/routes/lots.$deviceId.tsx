@@ -19,6 +19,7 @@ import { AsyncSurface } from "@/components/ui/async-surface";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/lots/$deviceId")({
   head: ({ params }) => ({
@@ -40,9 +41,9 @@ export const Route = createFileRoute("/lots/$deviceId")({
         action={
           <Link
             to="/lots"
-            className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            className="inline-flex items-center justify-center rounded-full stripe-btn px-5 py-2.5 text-xs font-bold text-primary-foreground"
           >
-            Về danh sách
+            Về danh sách bãi
           </Link>
         }
       />
@@ -139,9 +140,9 @@ function DeviceDetail() {
         action={
           <Link
             to="/lots"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full stripe-btn text-primary-foreground text-xs font-bold"
           >
-            Về danh sách
+            Về danh sách bãi
           </Link>
         }
       />
@@ -162,112 +163,121 @@ function DeviceDetail() {
       floor: target.slot.floor,
     });
     toast.success(`Đã giữ chỗ ${target.slot.slot_number}`, {
-      description: "Bạn có 10 phút để đến bãi.",
+      description: "Bạn có 10 phút để di chuyển tới bãi.",
     });
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="space-y-8">
+      {/* Header section with back navigation and detailed options */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <Link
             to="/lots"
-            className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+            className="text-xs font-bold text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 transition-colors"
           >
-            <ArrowLeft className="size-3.5" /> Danh sách
+            <ArrowLeft className="size-3.5" /> Quay lại danh sách
           </Link>
-          <h1 className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight">{device.name}</h1>
-          <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
-            <MapPin className="size-3.5" />
+          <h1 className="mt-2 text-headline text-foreground">{device.name}</h1>
+          <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1 font-semibold">
+            <MapPin className="size-4 text-muted-foreground/70" strokeWidth={2.25} />
             {device.description || "—"}
           </p>
-          <div className="mt-2 flex items-center gap-3 text-xs">
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-semibold">
             {device.is_online ? (
-              <span className="inline-flex items-center gap-1 text-[var(--available)]">
+              <span className="inline-flex items-center gap-1.5 text-[var(--available)]">
                 <span className="size-2 rounded-full bg-[var(--available)] animate-pulse-dot" />
-                <Wifi className="size-3" /> Online
+                <Wifi className="size-3.5" strokeWidth={2.5} /> Cảm biến trực tuyến
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-muted-foreground">
-                <WifiOff className="size-3" /> Offline
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <WifiOff className="size-3.5" strokeWidth={2.5} /> Cảm biến ngoại tuyến
               </span>
             )}
             {device.last_seen && (
               <span className="text-muted-foreground">
-                Cập nhật {formatRelative(device.last_seen)}
+                Đồng bộ {formatRelative(device.last_seen)}
               </span>
             )}
           </div>
         </div>
+        
+        {/* Top actions */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => toggle(deviceId)}
-            className="px-3 py-2 rounded-lg glass hover:bg-accent text-sm inline-flex items-center gap-1.5"
+            className="px-4.5 py-2 rounded-full glass hover:bg-accent text-xs font-bold inline-flex items-center gap-1.5 border border-border/40 hover:border-primary/20 transition-all"
           >
             <Star
-              className={`size-4 ${fav ? "fill-[var(--reserved)] text-[var(--reserved)]" : ""}`}
+              className={cn("size-4 transition-all", fav && "fill-[var(--reserved)] text-[var(--reserved)] scale-110")}
+              strokeWidth={fav ? 0 : 2.5}
             />
-            {fav ? "Đã thích" : "Yêu thích"}
+            {fav ? "Đã lưu" : "Lưu bãi đỗ"}
           </button>
           <button
             onClick={() => {
               navigator.clipboard?.writeText(window.location.href);
-              toast.success("Đã copy đường dẫn");
+              toast.success("Đã copy đường dẫn liên kết bãi đỗ!");
             }}
-            className="px-3 py-2 rounded-lg glass hover:bg-accent text-sm inline-flex items-center gap-1.5"
+            className="px-4.5 py-2 rounded-full glass hover:bg-accent text-xs font-bold inline-flex items-center gap-1.5 border border-border/40 hover:border-primary/20 transition-all"
           >
-            <Share2 className="size-4" /> Chia sẻ
+            <Share2 className="size-4" strokeWidth={2.5} /> Chia sẻ
           </button>
         </div>
       </div>
 
+      {/* KPI Stats overview */}
       <KpiCards stats={stats} />
 
+      {/* Intelligence analysis panel */}
       <LotIntelligencePanel lotDeviceId={deviceId} />
 
-
-      {/* Floor tabs */}
+      {/* Floor selections */}
       {layouts.length > 1 && (
-        <div className="flex flex-wrap gap-2">
-          {layouts.map((l) => (
-            <button
-              key={l.floor}
-              onClick={() => {
-                setActiveFloor(l.floor);
-                setSelectedSlotId(null);
-              }}
-              className={`px-3 py-1.5 rounded-lg text-sm ${
-                (activeFloor ?? layouts[0].floor) === l.floor
-                  ? "bg-primary text-primary-foreground"
-                  : "glass hover:bg-accent text-muted-foreground"
-              }`}
-            >
-              Tầng {l.floor}{" "}
-              <span className="opacity-60 ml-1 text-xs">({l.slots.length})</span>
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-2 p-1 bg-muted/20 dark:bg-muted/10 border border-border/20 rounded-full w-max">
+          {layouts.map((l) => {
+            const isActive = (activeFloor ?? layouts[0].floor) === l.floor;
+            return (
+              <button
+                key={l.floor}
+                onClick={() => {
+                  setActiveFloor(l.floor);
+                  setSelectedSlotId(null);
+                }}
+                className={cn(
+                  "px-4 py-2 rounded-full text-xs font-bold transition-all",
+                  isActive
+                    ? "bg-card text-primary shadow-sm border border-border/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                )}
+              >
+                Tầng {l.floor}
+                <span className="opacity-60 ml-1.5 text-[10px] font-bold">({l.slots.length})</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {/* View switcher */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="inline-flex glass rounded-xl p-1 gap-1">
+      {/* Controls & View switch segmented control */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="inline-flex glass rounded-full p-1 gap-0.5 border border-border/40 shadow-sm">
           <ViewBtn active={view === "3d"} onClick={() => setView("3d")}>
-            <Box className="size-4" /> 3D
+            <Box className="size-4" strokeWidth={2.25} /> Sơ đồ 3D
           </ViewBtn>
           <ViewBtn active={view === "2d"} onClick={() => setView("2d")}>
-            <Grid3x3 className="size-4" /> 2D
+            <Grid3x3 className="size-4" strokeWidth={2.25} /> Sơ đồ 2D
           </ViewBtn>
           <ViewBtn active={view === "map"} onClick={() => setView("map")}>
-            <MapIcon className="size-4" /> Bản đồ
+            <MapIcon className="size-4" strokeWidth={2.25} /> Bản đồ lớn
           </ViewBtn>
         </div>
+        
         {selectedSlotId && currentLayout && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              Đã chọn slot{" "}
-              <span className="font-mono font-semibold text-[var(--reserved)]">
+          <div className="flex items-center gap-3 bg-card border border-border/40 p-2 pl-4 rounded-full shadow-sm">
+            <span className="text-xs text-muted-foreground font-semibold">
+              Đã chọn vị trí:{" "}
+              <span className="font-mono font-bold text-[var(--reserved)] bg-[var(--reserved)]/10 px-2 py-0.5 rounded-full border border-[var(--reserved)]/20">
                 {
                   currentLayout.slots.find((s) => s.slot.id === selectedSlotId)
                     ?.slot.slot_number
@@ -276,20 +286,20 @@ function DeviceDetail() {
             </span>
             <button
               onClick={handleReserve}
-              className="px-4 py-2 rounded-lg bg-[var(--reserved)] text-[oklch(0.15_0.02_60)] font-semibold text-sm inline-flex items-center gap-1.5"
+              className="px-4.5 py-2.5 rounded-full bg-[var(--reserved)] text-[oklch(0.15_0.02_60)] font-extrabold text-xs inline-flex items-center gap-1.5 shadow-md hover:scale-[1.02] active:scale-95 transition-all"
             >
-              <Navigation className="size-4" /> Giữ chỗ này
+              <Navigation className="size-4" strokeWidth={2.5} /> Giữ vị trí này
             </button>
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
+      {/* Primary layout grid: 3D/2D and right statistics panel */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 rounded-2xl overflow-hidden glass border border-border/40 shadow-lg min-h-[500px]">
           {currentLayout ? (
             view === "3d" ? (
-              <ClientOnly fallback={<div className="h-[520px] rounded-2xl glass animate-pulse" />}>
+              <ClientOnly fallback={<div className="h-[520px] rounded-2xl animate-pulse bg-muted/20" />}>
                 <ParkingScene3D
                   layout={currentLayout}
                   selectedSlotId={selectedSlotId}
@@ -298,43 +308,57 @@ function DeviceDetail() {
                 />
               </ClientOnly>
             ) : view === "2d" ? (
-              <SlotGrid2D
-                layout={currentLayout}
-                selectedSlotId={selectedSlotId}
-                onSelectSlot={setSelectedSlotId}
-                pathCells={pathCells}
-              />
+              <div className="p-6 bg-card/40 dark:bg-card/10 h-full">
+                <SlotGrid2D
+                  layout={currentLayout}
+                  selectedSlotId={selectedSlotId}
+                  onSelectSlot={setSelectedSlotId}
+                  pathCells={pathCells}
+                />
+              </div>
             ) : (
-              <div className="h-[520px] rounded-2xl glass overflow-hidden">
-                <ClientOnly fallback={<div className="h-full animate-pulse" />}>
+              <div className="h-[520px] overflow-hidden relative">
+                <ClientOnly fallback={<div className="h-full animate-pulse bg-muted/20" />}>
                   <DeviceMiniMap device={device} />
                 </ClientOnly>
               </div>
             )
           ) : (
-            <div className="h-[520px] rounded-2xl glass grid place-items-center text-muted-foreground">
-              Chưa có dữ liệu cảm biến.
+            <div className="h-[520px] grid place-items-center text-muted-foreground font-semibold">
+              Chưa có cấu hình dữ liệu sơ đồ cảm biến.
             </div>
           )}
         </div>
-        <div className="space-y-4">
+        
+        {/* Right sidebar activity and details */}
+        <div className="space-y-6">
           <ActivityFeed device={device} />
-          <div className="rounded-2xl glass p-5">
-            <h3 className="text-sm font-semibold mb-3">Thông tin tầng</h3>
-            <div className="space-y-2">
+          
+          <div className="rounded-2xl glass p-5 border border-border/40">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-primary mb-4">Chi tiết mật độ tầng</h3>
+            <div className="space-y-4">
               {Object.entries(stats.byFloor).map(([f, v]) => {
                 const pct = v.total > 0 ? (v.available / v.total) * 100 : 0;
+                
+                // Color mapping
+                const colorTone =
+                  pct > 40
+                    ? "bg-gradient-to-r from-emerald-400 to-teal-500"
+                    : pct > 10
+                      ? "bg-gradient-to-r from-amber-400 to-orange-500"
+                      : "bg-gradient-to-r from-rose-500 to-red-600";
+
                 return (
-                  <div key={f} className="text-sm">
-                    <div className="flex justify-between text-xs text-muted-foreground">
+                  <div key={f} className="text-xs font-semibold">
+                    <div className="flex justify-between text-muted-foreground mb-1.5">
                       <span>Tầng {f}</span>
-                      <span className="font-mono">
-                        {v.available}/{v.total}
+                      <span className="font-mono text-foreground font-extrabold">
+                        {v.available}/{v.total} trống
                       </span>
                     </div>
-                    <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-2 rounded-full bg-muted/60 dark:bg-muted/10 overflow-hidden border border-border/10">
                       <div
-                        className="h-full bg-[var(--available)]"
+                        className={cn("h-full rounded-full transition-all duration-1000", colorTone)}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -361,11 +385,12 @@ function ViewBtn({
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-sm inline-flex items-center gap-1.5 ${
+      className={cn(
+        "px-4 py-2 rounded-full text-xs font-bold inline-flex items-center gap-1.5 transition-all duration-200",
         active
-          ? "bg-primary text-primary-foreground"
+          ? "bg-card text-primary shadow-sm border border-border/30"
           : "text-muted-foreground hover:text-foreground"
-      }`}
+      )}
     >
       {children}
     </button>

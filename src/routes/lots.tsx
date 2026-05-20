@@ -11,6 +11,7 @@ import { lookupCoord } from "@/lib/lot-coordinates";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LotCardSkeleton } from "@/components/ui/skeleton";
 import { AsyncSurface } from "@/components/ui/async-surface";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/lots")({
   head: () => ({
@@ -36,17 +37,20 @@ function LotsPage() {
   const [sort, setSort] = useState<Sort>("available");
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-8">
+      {/* Page Title Section */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Bãi đỗ xe</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            <span className="font-medium text-foreground">{query.data?.devices.length ?? 0}</span> bãi · Cập nhật realtime mỗi 3 giây
+          <span className="text-caption">Hệ thống bãi đỗ</span>
+          <h1 className="mt-2 text-headline text-foreground">Bãi đỗ xe IoT</h1>
+          <p className="text-sm text-muted-foreground mt-1.5 font-medium">
+            Phân tích trạng thái <span className="font-bold text-foreground">{query.data?.devices.length ?? 0}</span> bãi đỗ đang hoạt động thời gian thực.
           </p>
         </div>
         <LiveBadge />
       </div>
 
+      {/* Premium Filter Controls */}
       <FilterBar
         q={q}
         onQ={setQ}
@@ -59,7 +63,7 @@ function LotsPage() {
       <AsyncSurface
         query={query}
         skeleton={
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <LotCardSkeleton count={6} />
           </div>
         }
@@ -70,14 +74,14 @@ function LotsPage() {
             {data.mock && (
               <div
                 role="status"
-                className="rounded-xl bg-[var(--reserved)]/10 border border-[var(--reserved)]/30 p-3 text-xs flex items-center gap-2 mb-4"
+                className="rounded-2xl bg-[var(--reserved)]/8 border border-[var(--reserved)]/20 p-4 text-xs flex items-center gap-2.5 mb-6 shadow-sm"
               >
                 <span className="inline-block size-2 rounded-full bg-[var(--reserved)] animate-pulse-dot" />
-                <span className="font-medium text-foreground">
-                  Đang dùng dữ liệu giả lập
+                <span className="font-extrabold uppercase tracking-wider text-foreground">
+                  Dữ liệu giả lập
                 </span>
-                <span className="text-muted-foreground">
-                  — {data.error ?? "IOT_USE_MOCK đã bật."} Đặt chỗ và thanh toán vẫn hoạt động.
+                <span className="text-muted-foreground/90 font-medium">
+                  — Chế độ mô phỏng IOT_USE_MOCK đang hoạt động. Các tính năng đặt chỗ & thanh toán vẫn được duy trì đầy đủ.
                 </span>
               </div>
             )}
@@ -153,26 +157,26 @@ function FilteredGrid({
 
   if (list.length === 0) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {apiError && <ApiErrorAlert message={apiError} />}
         <EmptyState
           variant="search"
           icon={Search}
           title={
             apiError
-              ? "Chưa có dữ liệu bãi đỗ"
+              ? "Chưa có dữ liệu cảm biến"
               : "Không tìm thấy bãi đỗ phù hợp"
           }
           description={
             apiError
-              ? "API IoT đang gặp sự cố. Vui lòng thử lại sau."
-              : "Thử xoá bộ lọc hoặc tìm với từ khoá khác."
+              ? "Kết nối tới API cảm biến IoT đang bị gián đoạn. Vui lòng thử lại."
+              : "Không có kết quả khớp. Hãy thử thay đổi từ khoá hoặc tắt bộ lọc."
           }
           action={
             !apiError ? (
               <button
                 onClick={onClear}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+                className="inline-flex items-center justify-center h-10 px-5 rounded-full stripe-btn text-primary-foreground text-xs font-bold"
               >
                 Xoá bộ lọc
               </button>
@@ -184,9 +188,9 @@ function FilteredGrid({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {apiError && <ApiErrorAlert message={apiError} />}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {list.map((d) => (
           <LotCard key={getDeviceId(d)} device={d} />
         ))}
@@ -199,13 +203,13 @@ function ApiErrorAlert({ message }: { message: string }) {
   return (
     <div
       role="alert"
-      className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 text-sm flex items-start gap-3"
+      className="rounded-2xl bg-destructive/10 border border-destructive/20 p-4.5 text-sm flex items-start gap-3 shadow-sm"
     >
       <div>
-        <p className="font-medium text-destructive">
-          Không kết nối được API IoT
+        <p className="font-bold text-destructive">
+          Lỗi đồng bộ cảm biến IoT
         </p>
-        <p className="text-muted-foreground text-xs mt-1 break-words">
+        <p className="text-muted-foreground text-xs mt-1 font-medium break-all">
           {message}
         </p>
       </div>
@@ -229,31 +233,38 @@ function FilterBar({
   onSort: (v: Sort) => void;
 }) {
   return (
-    <div className="rounded-2xl glass p-3 flex flex-wrap items-center gap-2">
-      <label className="flex-1 min-w-[200px] flex items-center gap-2 px-3 rounded-lg bg-input/50">
+    <div className="rounded-2xl glass p-3 flex flex-wrap items-center gap-3">
+      {/* Search Input */}
+      <label className="flex-1 min-w-[240px] flex items-center gap-2 px-3.5 rounded-full bg-input/40 dark:bg-input/10 border border-border/40 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
         <Search className="size-4 text-muted-foreground" aria-hidden="true" />
         <input
           value={q}
           onChange={(e) => onQ(e.target.value)}
-          placeholder="Tìm theo tên hoặc địa chỉ..."
+          placeholder="Tìm kiếm bãi đỗ, khu vực..."
           aria-label="Tìm bãi đỗ"
-          className="flex-1 bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground"
+          className="flex-1 bg-transparent py-2.5 text-xs font-semibold outline-none placeholder:text-muted-foreground/75"
         />
       </label>
-      <Chip active={filter === "all"} onClick={() => onFilter("all")}>
-        Tất cả
-      </Chip>
-      <Chip active={filter === "online"} onClick={() => onFilter("online")}>
-        Online
-      </Chip>
-      <Chip active={filter === "available"} onClick={() => onFilter("available")}>
-        Còn chỗ
-      </Chip>
-      <Chip active={filter === "favorite"} onClick={() => onFilter("favorite")}>
-        Yêu thích
-      </Chip>
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto">
-        <Filter className="size-3.5" aria-hidden="true" />
+
+      {/* Filter Tabs / Chips */}
+      <div className="flex flex-wrap items-center gap-1.5 p-1 bg-muted/20 dark:bg-muted/10 rounded-full border border-border/20">
+        <Chip active={filter === "all"} onClick={() => onFilter("all")}>
+          Tất cả
+        </Chip>
+        <Chip active={filter === "online"} onClick={() => onFilter("online")}>
+          Online
+        </Chip>
+        <Chip active={filter === "available"} onClick={() => onFilter("available")}>
+          Còn chỗ
+        </Chip>
+        <Chip active={filter === "favorite"} onClick={() => onFilter("favorite")}>
+          Yêu thích
+        </Chip>
+      </div>
+
+      {/* Sort selection */}
+      <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground ml-auto bg-card/60 border border-border/40 px-3.5 py-2.5 rounded-full shadow-sm hover:border-primary/20 transition-all">
+        <Filter className="size-3.5 text-primary" aria-hidden="true" strokeWidth={2.5} />
         <label className="sr-only" htmlFor="sort-select">
           Sắp xếp
         </label>
@@ -261,10 +272,10 @@ function FilterBar({
           id="sort-select"
           value={sort}
           onChange={(e) => onSort(e.target.value as Sort)}
-          className="bg-transparent outline-none cursor-pointer"
+          className="bg-transparent outline-none cursor-pointer font-bold text-foreground text-[11px]"
         >
           <option value="nearest">Gần nhất</option>
-          <option value="available">Nhiều chỗ trống</option>
+          <option value="available">Chỗ trống tăng dần</option>
           <option value="occupancy">Lấp đầy nhất</option>
           <option value="name">Tên A-Z</option>
         </select>
@@ -286,11 +297,12 @@ function Chip({
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+      className={cn(
+        "px-4 py-2 rounded-full text-xs font-bold transition-all duration-200",
         active
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:bg-accent hover:text-foreground"
-      }`}
+          ? "bg-card text-primary shadow-sm border border-border/30"
+          : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+      )}
     >
       {children}
     </button>
