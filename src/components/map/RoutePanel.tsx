@@ -5,8 +5,13 @@ import {
   Car,
   ExternalLink,
   Footprints,
+  Loader2,
   Navigation,
   Share2,
+  Volume2,
+  VolumeX,
+  RotateCcw,
+  Sparkles,
   X,
 } from "lucide-react";
 import type { RoutingApi } from "@/hooks/useRouting";
@@ -49,8 +54,17 @@ export function RoutePanel({
   onBackToList,
   className,
 }: RoutePanelProps) {
-  const { route, profile, setProfile, autoReroute, setAutoReroute, clearRoute, share } =
-    routing;
+  const {
+    route,
+    profile,
+    setProfile,
+    autoReroute,
+    setAutoReroute,
+    clearRoute,
+    share,
+    voice,
+    replayCurrentStep,
+  } = routing;
 
   if (!route) return null;
 
@@ -91,6 +105,43 @@ export function RoutePanel({
             {route.name}
           </h2>
         </div>
+
+        {/* Voice toggle: Gemini Cloud TTS đọc tiếng Việt chuẩn, fallback
+            Web Speech API khi cloud lỗi. */}
+        {(voice.available || !voice.enabled) && (
+          <button
+            onClick={voice.toggle}
+            title={
+              voice.enabled
+                ? voice.engine === "cloud"
+                  ? "Tắt giọng đọc (đang dùng FPT.AI · leminh)"
+                  : "Tắt giọng đọc (đang dùng giọng hệ thống)"
+                : "Bật giọng đọc tiếng Việt"
+            }
+            aria-label={voice.enabled ? "Tắt giọng đọc" : "Bật giọng đọc"}
+            aria-pressed={voice.enabled}
+            className={cn(
+              "relative size-9 grid place-items-center rounded-lg transition-colors",
+              voice.enabled
+                ? "bg-primary/15 text-primary hover:bg-primary/25"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+          >
+            {voice.loading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : voice.enabled ? (
+              <Volume2 className="size-4" aria-hidden="true" />
+            ) : (
+              <VolumeX className="size-4" aria-hidden="true" />
+            )}
+            {voice.speaking && !voice.loading && (
+              <span
+                className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-primary animate-pulse"
+                aria-hidden="true"
+              />
+            )}
+          </button>
+        )}
 
         <button
           onClick={close}
@@ -142,8 +193,40 @@ export function RoutePanel({
         <RouteSteps steps={route.steps} activeIndex={routing.activeStep} />
       </div>
 
+      {/* Voice engine indicator: cloud (FPT.AI) hoặc local fallback. */}
+      {voice.available && voice.enabled && (
+        <div className="mx-4 mb-2 flex items-center gap-2 rounded-lg bg-muted/50 border border-border px-3 py-1.5 text-[11px]">
+          {voice.engine === "cloud" ? (
+            <>
+              <Sparkles className="size-3 text-primary" aria-hidden="true" />
+              <span className="text-foreground/80">
+                Giọng đọc <span className="font-semibold text-primary">FPT.AI · leminh</span> · tiếng Việt chuẩn
+              </span>
+            </>
+          ) : (
+            <>
+              <Volume2 className="size-3 text-amber-600" aria-hidden="true" />
+              <span className="text-amber-700 dark:text-amber-400">
+                Đang dùng giọng hệ thống (FPT.AI không khả dụng)
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Footer actions */}
       <footer className="px-4 py-3 border-t border-border space-y-2 shrink-0">
+        {voice.available && voice.enabled && (
+          <button
+            type="button"
+            onClick={replayCurrentStep}
+            className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-xs font-medium transition-colors"
+          >
+            <RotateCcw className="size-3.5" aria-hidden="true" />
+            Phát lại hướng dẫn hiện tại
+          </button>
+        )}
+
         <div className="grid grid-cols-3 gap-2">
           <a
             href={googleMapsLink(

@@ -9,6 +9,11 @@ import {
   type RouteResult,
 } from "@/lib/routing";
 import type { GeoPos } from "@/hooks/useGeolocation";
+import {
+  useNavigationVoice,
+  formatDistanceForSpeech,
+  type NavigationVoice,
+} from "@/hooks/useNavigationVoice";
 
 /**
  * Mục tiêu chỉ đường: toạ độ + tên + id (để lưu vào history và ?route=...).
@@ -39,6 +44,10 @@ export interface RoutingApi {
   clearRoute: () => void;
   /** Copy link chia sẻ chuyến đi vào clipboard. */
   share: () => void;
+  /** Voice guidance API (bật/tắt loa, replay). */
+  voice: NavigationVoice;
+  /** Đọc lại bước hiện tại bằng giọng tiếng Việt. */
+  replayCurrentStep: () => void;
 }
 
 /**
@@ -46,6 +55,8 @@ export interface RoutingApi {
  * - `routeTo(target)` gọi OSRM, set `route`, push history.
  * - Auto re-route khi đổi `profile` (nếu đang có route).
  * - Track `activeStep` theo `pos` + cảnh báo lệch lộ trình > 60m trong > 10s.
+ * - Voice guidance: đọc intro khi bắt đầu chuyến, đọc instruction
+ *   mỗi khi `activeStep` thay đổi (Vietnamese TTS qua Web Speech API).
  *
  * Trạng thái này được lift lên cấp page (`/map`) thay vì sống trong
  * `ParkingMap` để panel chỉ đường có thể render NGOÀI map (sidebar
@@ -62,6 +73,9 @@ export function useRouting(
   const [activeStep, setActiveStep] = useState(0);
   const offRouteSinceRef = useRef<number | null>(null);
   const lastRouteAtRef = useRef(0);
+  const lastSpokenStepRef = useRef<{ routeId: string; index: number } | null>(null);
+
+  const voice = useNavigationVoice();
 
   const routeTo = useCallback(
     async (target: RouteTarget) => {
@@ -81,7 +95,14 @@ export function useRouting(
           setRoute({ ...r, ...target });
           setActiveStep(0);
           lastRouteAtRef.current = Date.now();
+          lastSpokenStepRef.current = null;
           pushRouteHistory(target);
+
+          // Voice intro — đọc tổng quan chuyến đi
+          voice.speak(
+            `Bắt đầu chỉ đường tới ${target.name}. Tổng quãng đường ${r.distanceKm.toFixed(1)} ki-lô-mét, dự kiến ${Math.round(r.durationMin)} phút.`,
+            { interrupt: true },
+          );
         } else {
           toast.error("Không tìm thấy đường đi phù hợp.");
         }
@@ -92,7 +113,7 @@ export function useRouting(
         setLoading(false);
       }
     },
-    [pos, profile, requestPos],
+    [pos, profile, requestPos, voice],
   );
 
   // Re-route khi đổi profile (giữa chuyến)
@@ -118,6 +139,7 @@ export function useRouting(
       ) {
         offRouteSinceRef.current = null;
         toast.info("Bạn đã lệch đường — đang tính lại lộ trình…");
+        voice.speak("Bạn đã lệch đường, đang tính lại lộ trình.", { interrupt: true });
         routeTo({
           id: route.id,
           name: route.name,
@@ -128,13 +150,41 @@ export function useRouting(
     } else {
       offRouteSinceRef.current = null;
     }
-  }, [pos, route, autoReroute, routeTo]);
+  }, [pos, route, autoReroute, routeTo, voice]);
+
+  // Voice guidance: đọc instruction mỗi khi activeStep đổi (và khác lần
+  // đọc trước cho cùng route). Lưu cặp routeId+index để tránh đọc lại
+  // khi re-render hoặc khi đổi route.
+  useEffect(() => {
+    if (!route || !voice.enabled) return;
+    const step = route.steps[activeStep];
+    if (!step) return;
+    const last = lastSpokenStepRef.current;
+    if (last && last.routeId === route.id && last.index === activeStep) return;
+    lastSpokenStepRef.current = { routeId: route.id, index: activeStep };
+
+    // Bỏ qua step "depart" vì đã được intro phát rồi
+    if (step.type === "depart" && activeStep === 0) return;
+
+    const distance =
+      step.distance > 30 ? `Sau ${formatDistanceForSpeech(step.distance)}, ` : "";
+    voice.speak(`${distance}${step.text}.`, { interrupt: false });
+  }, [activeStep, route, voice]);
 
   const clearRoute = useCallback(() => {
     setRoute(null);
     setActiveStep(0);
     offRouteSinceRef.current = null;
-  }, []);
+    lastSpokenStepRef.current = null;
+    voice.cancel();
+  }, [voice]);
+
+  const replayCurrentStep = useCallback(() => {
+    if (!route) return;
+    const step = route.steps[activeStep];
+    if (!step) return;
+    voice.speak(step.text, { force: true, interrupt: true });
+  }, [route, activeStep, voice]);
 
   const share = useCallback(() => {
     if (!route) return;
@@ -155,5 +205,7 @@ export function useRouting(
     routeTo,
     clearRoute,
     share,
+    voice,
+    replayCurrentStep,
   };
 }
