@@ -113,9 +113,7 @@ export function RoutePanel({
             onClick={voice.toggle}
             title={
               voice.enabled
-                ? voice.engine === "cloud"
-                  ? "Tắt giọng đọc (đang dùng FPT.AI · leminh)"
-                  : "Tắt giọng đọc (đang dùng giọng hệ thống)"
+                ? "Tắt giọng đọc (đang dùng FPT.AI · leminh)"
                 : "Bật giọng đọc tiếng Việt"
             }
             aria-label={voice.enabled ? "Tắt giọng đọc" : "Bật giọng đọc"}
@@ -193,21 +191,21 @@ export function RoutePanel({
         <RouteSteps steps={route.steps} activeIndex={routing.activeStep} />
       </div>
 
-      {/* Voice engine indicator: cloud (FPT.AI) hoặc local fallback. */}
+      {/* Voice engine indicator: FPT.AI · leminh hoặc lỗi. */}
       {voice.available && voice.enabled && (
         <div className="mx-4 mb-2 flex items-center gap-2 rounded-lg bg-muted/50 border border-border px-3 py-1.5 text-[11px]">
-          {voice.engine === "cloud" ? (
+          {voice.error ? (
             <>
-              <Sparkles className="size-3 text-primary" aria-hidden="true" />
-              <span className="text-foreground/80">
-                Giọng đọc <span className="font-semibold text-primary">FPT.AI · leminh</span> · tiếng Việt chuẩn
+              <Volume2 className="size-3 text-amber-600" aria-hidden="true" />
+              <span className="text-amber-700 dark:text-amber-400 truncate">
+                {voice.error}
               </span>
             </>
           ) : (
             <>
-              <Volume2 className="size-3 text-amber-600" aria-hidden="true" />
-              <span className="text-amber-700 dark:text-amber-400">
-                Đang dùng giọng hệ thống (FPT.AI không khả dụng)
+              <Sparkles className="size-3 text-primary" aria-hidden="true" />
+              <span className="text-foreground/80">
+                Giọng đọc <span className="font-semibold text-primary">FPT.AI · leminh</span> · tiếng Việt chuẩn
               </span>
             </>
           )}

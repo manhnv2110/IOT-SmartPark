@@ -141,9 +141,6 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="stripe-bg-lines min-h-screen flex flex-col relative overflow-hidden">
-        <a href="#main" className="skip-link">
-          Đến nội dung chính
-        </a>
         <Header />
         <ReservationBanner />
         <main

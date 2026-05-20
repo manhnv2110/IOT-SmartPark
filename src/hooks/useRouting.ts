@@ -84,6 +84,8 @@ export function useRouting(
         toast.info("Đang chờ vị trí của bạn…");
         return;
       }
+      // Prime audio ngay trong gesture (user vừa click "Chỉ đường").
+      voice.unlock();
       setLoading(true);
       try {
         const r = await fetchRoute(
@@ -183,6 +185,7 @@ export function useRouting(
     if (!route) return;
     const step = route.steps[activeStep];
     if (!step) return;
+    voice.unlock();
     voice.speak(step.text, { force: true, interrupt: true });
   }, [route, activeStep, voice]);
 
