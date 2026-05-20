@@ -17,14 +17,31 @@ export const LOT_COORDINATES: Record<string, LotCoord> = {
   "bãi đỗ cầu giấy": { lat: 21.0322, lng: 105.7826 },
   "bãi đỗ tây hồ": { lat: 21.0664, lng: 105.8262 },
   "bãi đỗ hai bà trưng": { lat: 21.0167, lng: 105.8504 },
+  // Real IoT devices — tên từ API thật
+  "bãi đỗ xe long biên": { lat: 21.0393, lng: 105.8765 },
+  "bãi đỗ xe cầu giấy": { lat: 21.0322, lng: 105.7826 },
+  "bãi đỗ xe kiều mai": { lat: 21.0485, lng: 105.7445 },
+  "bãi đỗ xe hoàn kiếm": { lat: 21.0285, lng: 105.8542 },
+  "bãi đỗ xe tây hồ": { lat: 21.0664, lng: 105.8262 },
+  "bãi đỗ xe thanh xuân": { lat: 21.0034, lng: 105.8133 },
+  "bãi đỗ xe ba đình": { lat: 21.0368, lng: 105.8342 },
+  "bãi đỗ xe hai bà trưng": { lat: 21.0167, lng: 105.8504 },
 };
 
 export function lookupCoord(name: string): LotCoord | null {
   const key = name.trim().toLowerCase();
+  // Exact match
   if (LOT_COORDINATES[key]) return LOT_COORDINATES[key];
-  // fuzzy: contains
+  // Fuzzy: contains (either direction)
   for (const [k, v] of Object.entries(LOT_COORDINATES)) {
     if (key.includes(k) || k.includes(key)) return v;
+  }
+  // Normalize: bỏ "xe " để "bãi đỗ xe cầu giấy" match "bãi đỗ cầu giấy"
+  const normalized = key.replace(/\bxe\s+/g, "");
+  if (LOT_COORDINATES[normalized]) return LOT_COORDINATES[normalized];
+  for (const [k, v] of Object.entries(LOT_COORDINATES)) {
+    const kNorm = k.replace(/\bxe\s+/g, "");
+    if (normalized.includes(kNorm) || kNorm.includes(normalized)) return v;
   }
   return null;
 }

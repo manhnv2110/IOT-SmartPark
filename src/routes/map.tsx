@@ -373,7 +373,7 @@ function LotList({
 }) {
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="px-4 pt-3 pb-2 shrink-0">
+      <div className="px-4 pt-3 pb-2 shrink-0 border-b border-border/50">
         <h1 className="font-semibold tracking-tight text-sm">Bãi đỗ gần bạn</h1>
         <p className="text-[11px] text-muted-foreground">
           {sorted.length} bãi · Sắp xếp theo khoảng cách
@@ -386,66 +386,92 @@ function LotList({
             : "flex-1 min-h-0 overflow-y-auto scrollbar-thin"
         }
       >
-        {sorted.map((lot) => (
-          <div
-            key={lot.id}
-            className={`px-4 py-3 border-t border-border/50 hover:bg-accent/40 transition-colors ${
-              selectedId === lot.id ? "bg-accent/60" : ""
-            }`}
-          >
-            <button
-              type="button"
+        {sorted.map((lot) => {
+          const active = selectedId === lot.id;
+          const occRate = lot.total > 0 ? 1 - lot.available / lot.total : 0;
+          return (
+            <div
+              key={lot.id}
+              className={cn(
+                "px-4 py-3 border-b border-border/40 transition-colors cursor-pointer",
+                active
+                  ? "bg-primary/5 border-l-2 border-l-primary"
+                  : "hover:bg-accent/30",
+              )}
               onClick={() => onSelect(lot.id)}
-              className="w-full text-left"
             >
+              {/* Row 1: Name + availability */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-sm truncate flex items-center gap-1.5">
+                  <div className="font-semibold text-sm truncate flex items-center gap-1.5">
                     {lot.name}
                     {!lot.isReal && (
-                      <span className="text-[9px] px-1 py-0.5 rounded bg-muted text-muted-foreground">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
                         demo
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
-                    <MapPin className="size-3" aria-hidden="true" />
-                    {lot.description}
+                  <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                    <MapPin className="size-3 shrink-0" aria-hidden="true" />
+                    {lot.description || "—"}
                   </div>
                 </div>
                 <div className="text-right shrink-0">
                   <div
-                    className={`font-mono font-bold text-sm ${
+                    className={cn(
+                      "font-mono font-bold text-base tabular-nums",
                       lot.available === 0
                         ? "text-[var(--occupied)]"
-                        : "text-[var(--available)]"
-                    }`}
+                        : lot.available <= 5
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-[var(--available)]",
+                    )}
                   >
                     {lot.available}
                   </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    /{lot.total}
+                  <div className="text-[10px] text-muted-foreground tabular-nums">
+                    /{lot.total} chỗ
                   </div>
                 </div>
               </div>
-            </button>
-            <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
-              {lot.distance != null && (
-                <span>{lot.distance.toFixed(1)} km</span>
-              )}
-              <div className="flex items-center gap-2 ml-auto">
+
+              {/* Row 2: Occupancy bar + distance */}
+              <div className="mt-2 flex items-center gap-3">
+                <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      occRate > 0.85
+                        ? "bg-[var(--occupied)]"
+                        : occRate > 0.5
+                          ? "bg-amber-500"
+                          : "bg-[var(--available)]",
+                    )}
+                    style={{ width: `${Math.min(100, occRate * 100)}%` }}
+                  />
+                </div>
+                {lot.distance != null && (
+                  <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                    {lot.distance.toFixed(1)} km
+                  </span>
+                )}
+              </div>
+
+              {/* Row 3: Action buttons */}
+              <div className="mt-2.5 flex items-center gap-2">
                 {lot.lat != null && lot.lng != null && (
                   <button
                     type="button"
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.stopPropagation();
                       onRoute({
                         id: lot.id,
                         name: lot.name,
                         lat: lot.lat!,
                         lng: lot.lng!,
-                      })
-                    }
-                    className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                      });
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
                   >
                     <Navigation className="size-3" aria-hidden="true" />
                     Chỉ đường
@@ -453,18 +479,18 @@ function LotList({
                 )}
                 {lot.isReal && (
                   <Link
-                    to="/lots/$deviceId"
-                    params={{ deviceId: lot.id }}
+                    to="/booking/new"
+                    search={{ lot: lot.id, name: lot.name }}
                     onClick={(e) => e.stopPropagation()}
-                    className="text-primary hover:underline"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-sm"
                   >
-                    Chi tiết →
+                    Đặt chỗ
                   </Link>
                 )}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

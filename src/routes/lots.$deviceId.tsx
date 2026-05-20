@@ -204,6 +204,13 @@ function DeviceDetail() {
         
         {/* Top actions */}
         <div className="flex items-center gap-2">
+          <Link
+            to="/booking/new"
+            search={{ lot: deviceId, name: device.name }}
+            className="px-4.5 py-2 rounded-full bg-primary text-primary-foreground text-xs font-bold inline-flex items-center gap-1.5 shadow-[var(--shadow-1)] hover:opacity-90 transition-all"
+          >
+            <Navigation className="size-4" strokeWidth={2.5} /> Đặt chỗ
+          </Link>
           <button
             onClick={() => toggle(deviceId)}
             className="px-4.5 py-2 rounded-full glass hover:bg-accent text-xs font-bold inline-flex items-center gap-1.5 border border-border/40 hover:border-primary/20 transition-all"
